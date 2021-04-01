@@ -26,6 +26,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Prepare .env
+        run: |
+          cp ".env.template" ".env"
+
       - name: Run tests
         run: |
           if [ -f docker-compose.test.yml ]; then
