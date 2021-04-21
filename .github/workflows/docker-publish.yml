@@ -26,10 +26,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Prepare .env
-        run: |
-          cp ".env.template" ".env"
-
       - name: Login
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
@@ -39,8 +35,5 @@ jobs:
           REGISTRY: ${{secrets.DOCKER_REGISTRY}}
           VERSION: latest
         run: |
-          echo REGISTRY=$REGISTRY
-          echo VERSION=$VERSION
-
           docker-compose build
           docker-compose push
