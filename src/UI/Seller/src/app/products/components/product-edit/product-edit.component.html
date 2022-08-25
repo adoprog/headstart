@@ -4,7 +4,13 @@
       productInReviewNotifications?.length > 0 &&
       userContext?.UserType === 'SUPPLIER'
     "
-    class="alert alert-warning d-flex justify-content-start align-items-center set-to-top"
+    class="
+      alert alert-warning
+      d-flex
+      justify-content-start
+      align-items-center
+      set-to-top
+    "
   >
     <fa-icon [icon]="faExclamationCircle" class="mr-3"></fa-icon>
     <p class="mb-0">
@@ -20,7 +26,13 @@
       class="alert alert-warning set-to-top"
     >
       <div
-        class="pb-3 border-bottom d-flex justify-content-between align-items-center"
+        class="
+          pb-3
+          border-bottom
+          d-flex
+          justify-content-between
+          align-items-center
+        "
       >
         <div class="d-flex justify-content-start align-items-center">
           <fa-icon [icon]="faExclamationCircle" class="mr-3"></fa-icon>
@@ -95,6 +107,9 @@
           <div class="container-fluid">
             <div class="row pt-3">
               <div class="col-md-8 form-group">
+                <span class="required-field">
+                  * <span translate>ADMIN.COMMON.REQUIRED_FIELDS</span></span
+                >
                 <div class="card bg-white shadow-sm p-4 mt-3">
                   <!-- Product Name -->
                   <div
@@ -127,7 +142,8 @@
                   <div class="form-row">
                     <div class="form-group col-md-6">
                       <label for="Name" translate
-                        >ADMIN.PRODUCT_EDIT.NAME</label
+                        >ADMIN.PRODUCT_EDIT.NAME
+                        <span class="required-field">*</span></label
                       >
                       <input
                         [attr.disabled]="readonly ? true : null"
@@ -152,7 +168,8 @@
                     </div>
                     <div [hidden]="isCreatingNew" class="form-group col-md-6">
                       <label for="ProductType" translate
-                        >ADMIN.PRODUCT_EDIT.PRODUCT_TYPE</label
+                        >ADMIN.PRODUCT_EDIT.PRODUCT_TYPE
+                        <span class="required-field">*</span></label
                       >
                       <select
                         [attr.disabled]="readonly ? true : null"
@@ -176,41 +193,6 @@
                           {{ product }}
                         </option>
                       </select>
-                    </div>
-                  </div>
-                  <hr />
-                  <h6 class="font-weight-medium">
-                    Personalization
-                    <small class="d-block">
-                      <fa-icon
-                        class="color-beige"
-                        [icon]="faExclamationCircle"
-                      ></fa-icon>
-                      <span translate>
-                        ADMIN.PRODUCT_EDIT.ARTWORK_REQUIRED_INFO</span
-                      >
-                    </small>
-                  </h6>
-                  <div class="form-group">
-                    <div class="custom-control custom-checkbox">
-                      <input
-                        type="checkbox"
-                        class="custom-control-input"
-                        formControlName="ArtworkRequired"
-                        (input)="
-                          handleUpdateProduct(
-                            $event,
-                            'Product.xp.ArtworkRequired'
-                          )
-                        "
-                        id="ArtworkRequired"
-                      />
-                      <label
-                        class="custom-control-label"
-                        for="ArtworkRequired"
-                        translate
-                        >ADMIN.PRODUCT_EDIT.ARTWORK_REQUIRED</label
-                      >
                     </div>
                   </div>
                   <!-- /Product Name -->
@@ -297,6 +279,7 @@
                     <div class="form-group col-md-6">
                       <label for="UnitOfMeasureQty" translate
                         >ADMIN.PRODUCT_EDIT.QUANTITY_PER_UNIT
+                        <span class="required-field">*</span>
                       </label>
                       <input
                         [attr.disabled]="readonly ? true : null"
@@ -320,6 +303,7 @@
                     <div class="form-group col-md-6">
                       <label for="UnitOfMeasureUnit" translate
                         >ADMIN.PRODUCT_EDIT.UNIT_OF_MEASURE
+                        <span class="required-field">*</span>
                       </label>
                       <input
                         [attr.disabled]="readonly ? true : null"
@@ -411,6 +395,7 @@
                   <div class="form-group">
                     <div class="custom-control custom-checkbox">
                       <input
+                        [attr.disabled]="readonly ? true : null"
                         type="checkbox"
                         class="custom-control-input"
                         formControlName="InventoryEnabled"
@@ -535,7 +520,6 @@
                       ADMIN.PRODUCT_EDIT.QUANTITY_AVAILABLE
                     </p>
                     <a
-                      [fragment]="variants"
                       class="text-muted cursor-pointer"
                       translate
                       (click)="active = 5"
@@ -553,26 +537,16 @@
                 <!-- /Inventory Tracking -->
                 <!-- Tax Categorization -->
                 <product-tax-code-select-component
+                  *ngIf="taxCodes?.ProductsShouldHaveTaxCodes"
                   [readonly]="readonly"
                   [productForm]="productForm"
                   [superHSProductEditable]="_superHSProductEditable"
-                  [taxCodes]="taxCodes"
-                  [isRequired]="isRequired('TaxCodeCategory')"
+                  [taxCodes]="taxCodes?.Categories"
                   [isCreatingNew]="isCreatingNew"
-                  (handleTaxCodeCategorySelection)="
-                    handleTaxCodeCategorySelection($event)
-                  "
                   (handleTaxCodeSelection)="
                     handleTaxCodeSelection($event.target.value)
                   "
                   (handleTaxCodesSearched)="searchTaxCodes($event)"
-                  (handleIsResale)="
-                    handleUpdateProduct(
-                      { target: { value: $event } },
-                      'Product.xp.IsResale'
-                    )
-                  "
-                  (onScrollEnd)="handleScrollEnd($event)"
                 >
                 </product-tax-code-select-component>
                 <!-- /Tax Categorization -->
@@ -583,7 +557,7 @@
                       class="d-flex justify-content-between align-items-center"
                     >
                       <h6 class="font-weight-medium" translate>
-                        ADMIN.PRODUCT_EDIT.SHIPPING
+                        ADMIN.PRODUCT_EDIT.SHIPPING.SHIPPING
                       </h6>
                       <ng-container
                         *ngIf="
@@ -619,7 +593,7 @@
                         class="custom-control-label"
                         for="FreeShipping"
                         translate
-                        >ADMIN.PRODUCT_EDIT.FREE_SHIPPING</label
+                        >ADMIN.PRODUCT_EDIT.SHIPPING.FREE_SHIPPING</label
                       >
                     </div>
                     <div
@@ -627,7 +601,7 @@
                       class="mb-3"
                     >
                       <label for="FreeShippingMessage" translate
-                        >ADMIN.PRODUCT_EDIT.FREE_SHIPPING_MESSAGE
+                        >ADMIN.PRODUCT_EDIT.SHIPPING.FREE_SHIPPING_MESSAGE
                       </label>
                       <input
                         [attr.disabled]="readonly ? true : null"
@@ -650,12 +624,13 @@
                           [icon]="faExclamationCircle"
                         ></fa-icon>
                         <span translate>
-                          ADMIN.PRODUCT_EDIT.FREE_SHIPPING_MESSAGE_INFO</span
+                          ADMIN.PRODUCT_EDIT.SHIPPING.FREE_SHIPPING_MESSAGE_INFO</span
                         >
                       </small>
                     </div>
                     <label for="ShipFromAddressID" translate
                       >ADMIN.PRODUCT_EDIT.WHICH_LOCATION_SHIP
+                      <span class="required-field">*</span>
                     </label>
                     <select
                       [attr.disabled]="readonly ? true : null"
@@ -685,6 +660,7 @@
                   >
                     <label for="ShipWeight" translate>
                       ADMIN.PRODUCT_EDIT.WEIGHT_PER_QTY
+                      <span class="required-field">*</span>
                     </label>
                   </div>
                   <div class="form-row">
@@ -706,12 +682,13 @@
                             )
                           "
                           placeholder="{{
-                            'ADMIN.PRODUCT_EDIT.ENTER_SHIP_WEIGHT' | translate
+                            'ADMIN.PRODUCT_EDIT.SHIPPING.ENTER_SHIP_WEIGHT'
+                              | translate
                           }}"
                         />
                         <div class="input-group-append">
-                          <span class="input-group-text rounded-right"
-                            >pounds</span
+                          <span class="input-group-text rounded-right" translate
+                            >ADMIN.PRODUCT_EDIT.SHIPPING.POUNDS</span
                           >
                         </div>
                       </div>
@@ -720,7 +697,8 @@
                   <hr />
                   <div class="form-group">
                     <label class="d-block" for="SizeTier" translate
-                      >ADMIN.PRODUCT_EDIT.SIZE_TIER_LABEL</label
+                      >ADMIN.PRODUCT_EDIT.SHIPPING.SIZE_TIER_LABEL
+                      <span class="required-field">*</span></label
                     >
                     <select
                       [attr.disabled]="readonly ? true : null"
@@ -734,7 +712,7 @@
                       "
                     >
                       <option [ngValue]="null" disabled translate>
-                        ADMIN.PRODUCT_EDIT.SIZE_TIER_CHOOSE
+                        ADMIN.PRODUCT_EDIT.SHIPPING.SIZE_TIER_CHOOSE
                       </option>
                       <option
                         *ngFor="let tier of availableSizeTiers"
@@ -743,7 +721,7 @@
                         "
                         value="{{ tier.Tier }}"
                       >
-                        {{ tier.Description }}
+                        {{ tier.Description | translate }}
                       </option>
                     </select>
                     <small>
@@ -751,7 +729,9 @@
                         class="color-beige"
                         [icon]="faExclamationCircle"
                       ></fa-icon>
-                      <span translate> ADMIN.PRODUCT_EDIT.SIZE_TIER_INFO</span>
+                      <span translate>
+                        ADMIN.PRODUCT_EDIT.SHIPPING.SIZE_TIER_INFO</span
+                      >
                     </small>
                   </div>
                   <ng-container
@@ -759,7 +739,7 @@
                   >
                     <div class="form-group mb-0">
                       <label for="ShipHeight" translate
-                        >ADMIN.PRODUCT_EDIT.LENGTH_BY_WIDTH_BY_HEIGHT
+                        >ADMIN.PRODUCT_EDIT.SHIPPING.LENGTH_BY_WIDTH_BY_HEIGHT
                       </label>
                     </div>
                     <div class="form-row">
@@ -781,7 +761,8 @@
                               )
                             "
                             placeholder="{{
-                              'ADMIN.PRODUCT_EDIT.ENTER_SHIP_LENGTH' | translate
+                              'ADMIN.PRODUCT_EDIT.SHIPPING.ENTER_SHIP_LENGTH'
+                                | translate
                             }}"
                           />
                           <div class="input-group-append">
@@ -809,7 +790,8 @@
                               )
                             "
                             placeholder="{{
-                              'ADMIN.PRODUCT_EDIT.ENTER_SHIP_WIDTH' | translate
+                              'ADMIN.PRODUCT_EDIT.SHIPPING.ENTER_SHIP_WIDTH'
+                                | translate
                             }}"
                           />
                           <div class="input-group-append">
@@ -837,7 +819,8 @@
                               )
                             "
                             placeholder="{{
-                              'ADMIN.PRODUCT_EDIT.ENTER_SHIP_HEIGHT' | translate
+                              'ADMIN.PRODUCT_EDIT.SHIPPING.ENTER_SHIP_HEIGHT'
+                                | translate
                             }}"
                           />
                           <div class="input-group-append">
@@ -855,13 +838,26 @@
               <!-- Product Preview -->
               <div class="col-md-4">
                 <div
-                  class="card py-2 px-3 bg-white sticky-top product-preview-card"
+                  class="
+                    card
+                    py-2
+                    px-3
+                    bg-white
+                    sticky-top
+                    product-preview-card
+                  "
                 >
                   <p class="text-center font-weight-bold" translate>
                     ADMIN.PRODUCT_EDIT.PRODUCT_PREVIEW
                   </p>
                   <div
-                    class="card product-preview w-100 border-hover cursor-pointer"
+                    class="
+                      card
+                      product-preview
+                      w-100
+                      border-hover
+                      cursor-pointer
+                    "
                   >
                     <div class="ribbon ribbon-top-right bg-light">
                       <fa-icon
@@ -876,7 +872,13 @@
                         [alt]="_superHSProductEditable?.Product?.Name"
                       />
                       <div
-                        class="card-body d-flex flex-column justify-content-between bg-light"
+                        class="
+                          card-body
+                          d-flex
+                          flex-column
+                          justify-content-between
+                          bg-light
+                        "
                       >
                         <h5
                           class="card-title"
@@ -896,15 +898,19 @@
                           }}
                         </p>
                         <div
-                          class="d-flex flex-wrap justify-content-between align-items-center"
+                          class="
+                            d-flex
+                            flex-wrap
+                            justify-content-between
+                            align-items-center
+                          "
                         >
-                          <p class="card-text mb-0">
-                            {{
+                          <app-price-display
+                            class="card-text mb-0"
+                            [priceSchedule]="
                               _superHSProductEditable?.PriceSchedule
-                                ?.PriceBreaks[0]?.Price
-                                | currency: supplierCurrency?.Currency
-                            }}
-                          </p>
+                            "
+                          ></app-price-display>
                           <small class="card-text text-muted"
                             >{{
                               _superHSProductEditable?.Product?.xp
@@ -931,12 +937,8 @@
       </li>
       <!-- /Product Details -->
       <!-- Buyer Visibility -->
-      <li [ngbNavItem]="1" *ngIf="sellerView" id="1">
-        <a
-          [fragment]="catalog - assignments"
-          class="text-muted"
-          ngbNavLink
-          translate
+      <li [ngbNavItem]="1" *ngIf="userContext?.UserType === 'SELLER'" id="1">
+        <a class="text-muted" ngbNavLink translate
           >ADMIN.PRODUCT_EDIT.BUYER_VISIBILITY</a
         >
         <ng-template ngbNavContent>
@@ -948,9 +950,23 @@
         </ng-template>
       </li>
       <!-- /Buyer Visibility -->
+      <!-- Related Products -->
+      <li [ngbNavItem]="7" id="7">
+        <a class="text-muted" ngbNavLink translate
+          >ADMIN.PRODUCT_EDIT.RELATED_PRODUCTS</a
+        >
+        <ng-template ngbNavContent>
+          <related-products-component
+            *ngIf="_superHSProductStatic?.Product?.ID"
+            [product]="_superHSProductStatic.Product"
+          >
+          </related-products-component>
+        </ng-template>
+      </li>
+      <!-- /Related Products -->
       <!-- Description -->
       <li [ngbNavItem]="2" id="2">
-        <a [fragment]="description" class="text-muted" ngbNavLink translate
+        <a class="text-muted" ngbNavLink translate
           >ADMIN.PRODUCT_EDIT.DESCRIPTION</a
         >
         <ng-template ngbNavContent>
@@ -1007,6 +1023,7 @@
                     </p>
                   </div>
                   <div
+                    *ngIf="productForm.controls['Description'].value"
                     [innerHtml]="
                       productForm.controls['Description'].value | safeHTML
                     "
@@ -1041,7 +1058,6 @@
         [disabled]="readonly && !_superHSProductEditable?.PriceSchedule?.ID"
       >
         <a
-          [fragment]="price"
           class="text-muted d-flex justify-content-center align-items-center"
           ngbNavLink
           translate
@@ -1075,6 +1091,7 @@
             [readonly]="readonly"
             [productForm]="productForm"
             [supplierCurrency]="supplierCurrency"
+            [isSellerUser]="isSellerUser"
             [sellerCurrency]="sellerCurrency"
             [superHSProductEditable]="_superHSProductEditable"
             [isRequired]="isRequired('Price')"
@@ -1086,7 +1103,7 @@
       <!-- /Pricing -->
       <!-- Filters -->
       <li [ngbNavItem]="4" id="4">
-        <a [fragment]="filters" class="text-muted" ngbNavLink translate
+        <a class="text-muted" ngbNavLink translate
           >ADMIN.PRODUCT_EDIT.FILTERS</a
         >
         <ng-template ngbNavContent>
@@ -1109,22 +1126,17 @@
       <!-- /Filters -->
       <!-- Varitaions -->
       <li *ngIf="!_superHSProductEditable?.Product?.ID" [ngbNavItem]="5" id="5">
-        <a
-          [fragment]="variants"
-          class="text-muted nav-link"
-          (click)="showVariantToastr()"
-          translate
-        >
+        <a class="text-muted nav-link" (click)="showVariantToastr()" translate>
           ADMIN.PRODUCT_EDIT.VARIANTS
-          <span class="badge badge-pill badge-info">{{
+          <span class="badge badge-pill badge-primary-light">{{
             _superHSProductEditable?.Variants?.length || 0
           }}</span>
         </a>
       </li>
       <li *ngIf="_superHSProductEditable?.Product?.ID" [ngbNavItem]="5" id="5">
-        <a [fragment]="variants" class="text-muted" ngbNavLink translate>
+        <a class="text-muted" ngbNavLink translate>
           ADMIN.PRODUCT_EDIT.VARIANTS
-          <span class="badge badge-pill badge-info">{{
+          <span class="badge badge-pill badge-primary-light">{{
             _superHSProductEditable?.Variants?.length || 0
           }}</span>
         </a>
@@ -1150,17 +1162,13 @@
       <!-- /Variations -->
       <!-- Images & Documents -->
       <li [ngbNavItem]="6" id="6">
-        <a
-          [fragment]="images - and - documents"
-          class="text-muted"
-          ngbNavLink
-          translate
+        <a class="text-muted" ngbNavLink translate
           >ADMIN.PRODUCT_EDIT.IMAGES_AND_DOCUMENTS
-          <span class="badge badge-pill badge-info">{{
+          <span class="badge badge-pill badge-primary-light">{{
             _superHSProductEditable?.Product?.xp?.Images?.length +
               _superHSProductEditable?.Product?.xp.Documents?.length +
-              imageFiles?.length +
-              staticContentFiles?.length
+              stagedImages?.length +
+              stagedDocuments?.length
           }}</span></a
         >
         <ng-template ngbNavContent>
@@ -1173,109 +1181,12 @@
                 </p>
               </div>
               <div class="col-md-7">
-                <!--droped image preview-->
-                <div
-                  class="d-flex justify-content-start align-items-center flex-wrap"
-                >
-                  <div
-                    *ngFor="let image of images; let i = index"
-                    class="product-img-wrapper mr-2"
-                  >
-                    <div class="product-img">
-                      <img
-                        [id]="i"
-                        src="{{ image.ThumbnailUrl }}"
-                        width="auto"
-                        height="100px"
-                      />
-                      <span
-                        *ngIf="i === 0"
-                        class="badge badge-primary primary-badge position-absolute mt-1 ml-1"
-                        translate
-                      >
-                        ADMIN.PRODUCT_EDIT.PRIMARY
-                      </span>
-                    </div>
-                    <div
-                      *ngIf="!readonly"
-                      class="product-img-delete text-center"
-                    >
-                      <button
-                        title="Delete photo"
-                        class="btn btn-light btn-group-item"
-                        data-ui="action-btn"
-                        data-action="delete"
-                        type="button"
-                        (click)="open(content)"
-                      >
-                        <fa-icon [icon]="faTrash"></fa-icon>
-                      </button>
-                      <ng-template #content let-modal class="confirm-modal">
-                        <confirm-modal
-                          modalTitle="Delete Image?"
-                          description="Deleting this image cannot be reversed.<br /><small class='font-italic'>If your product has no images, a fallback image will display on the buyer site.</small>"
-                        >
-                          <button
-                            type="button"
-                            class="btn btn-link text-dark"
-                            (click)="modal.dismiss()"
-                            translate
-                          >
-                            ADMIN.PRODUCT_EDIT.CANCEL
-                          </button>
-                          <button
-                            type="button"
-                            class="btn brand-button--danger"
-                            (click)="removeFile(image, 'image')"
-                            (click)="modal.dismiss()"
-                            translate
-                          >
-                            COMMON.YES_DELETE
-                          </button>
-                        </confirm-modal>
-                      </ng-template>
-                    </div>
-                  </div>
-                  <div
-                    *ngFor="let image of imageFiles; let i = index"
-                    class="product-img-wrapper mr-2"
-                  >
-                    <img
-                      class="product-img"
-                      [id]="i"
-                      [src]="image.URL"
-                      width="auto"
-                      height="100px"
-                    />
-                    <div class="product-img-delete text-center">
-                      <button
-                        title="Un-stage photo"
-                        class="btn btn-light btn-group-item"
-                        data-ui="action-btn"
-                        data-action="unstageFile"
-                        (click)="unstageFile(i, 'image')"
-                      >
-                        <fa-icon [icon]="faTimes"></fa-icon>
-                      </button>
-                    </div>
-                  </div>
-                  <label
-                    *ngIf="!readonly"
-                    class="rmpm dropzone"
-                    for="imageUpload"
-                    appDrag
-                    (files)="stageImages($event)"
-                  >
-                  </label>
-                  <input
-                    [disabled]="readonly"
-                    class="d-none"
-                    id="imageUpload"
-                    type="file"
-                    (change)="manualFileUpload($event, 'image')"
-                    multiple
-                  />
-                </div>
+                <app-product-image-upload
+                  [images]="images"
+                  [stagedImages]="stagedImages"
+                  (stagedImagesChange)="onStagedImagesChange($event)"
+                  (deleteImage)="onDeleteFile($event)"
+                ></app-product-image-upload>
               </div>
             </div>
             <div class="row pt-3 mt-5 border-top">
@@ -1286,118 +1197,13 @@
                 </p>
               </div>
               <div class="col-md-7">
-                <!--droped doc preview-->
-                <div
-                  class="d-flex justify-content-start align-items-center flex-wrap"
+                <app-product-document-upload
+                  [documents]="documents"
+                  [stagedDocuments]="stagedDocuments"
+                  (stagedDocumentsChange)="onStagedDocumentsChange($event)"
+                  (deleteDocument)="onDeleteFile($event)"
                 >
-                  <div *ngIf="!readonly" class="input-group mb-3">
-                    <input
-                      type="text"
-                      required
-                      class="form-control"
-                      value="{{ documentName }}"
-                      placeholder="Document Name"
-                      aria-label="Document Name"
-                      (keyup)="getDocumentName($event)"
-                      aria-describedby="document name"
-                    />
-                    <div class="input-group-append">
-                      <label
-                        *ngIf="documentName?.length"
-                        class="btn btn-outline-primary"
-                        for="documentUpload"
-                        (files)="stageDocuments($event)"
-                        translate
-                      >
-                        ADMIN.PRODUCT_EDIT.CHOOSE_FILE
-                        <input
-                          id="documentUpload"
-                          class="d-none"
-                          type="file"
-                          (change)="manualFileUpload($event, 'staticContent')"
-                        />
-                      </label>
-                    </div>
-                  </div>
-                  <div
-                    *ngFor="let file of staticContentFiles; let i = index"
-                    class="product-img-wrapper mr-2"
-                  >
-                    <a class="text-link">{{ file.Filename }}</a>
-                    <div *ngIf="!readonly" class="float-right float-middle">
-                      <button
-                        title="Un-stage file"
-                        class="btn btn-light btn-group-item"
-                        data-ui="action-btn"
-                        data-action="unstageFile"
-                        (click)="unstageFile(i, 'staticContent')"
-                      >
-                        <fa-icon [icon]="faTimes"></fa-icon>
-                      </button>
-                    </div>
-                  </div>
-                  <table
-                    class="table table-sm bg-light"
-                    *ngIf="staticContent?.length > 0"
-                  >
-                    <thead>
-                      <tr>
-                        <th translate>ADMIN.PRODUCT_EDIT.DOCUMENTS</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr *ngFor="let file of staticContent">
-                        <td>{{ file.FileName }}</td>
-                        <td>
-                          <a
-                            class="btn-link"
-                            href="{{ file.Url }}"
-                            target="_blank"
-                            download="file.FileName"
-                            translate
-                            >ADMIN.PRODUCT_EDIT.DOWNLOAD</a
-                          >
-                        </td>
-                        <td>
-                          <button
-                            title="Delete file"
-                            class="btn btn-light btn-group-item"
-                            data-ui="action-btn"
-                            data-action="delete"
-                            type="button"
-                            (click)="open(content)"
-                          >
-                            <fa-icon [icon]="faTrash"></fa-icon>
-                          </button>
-                        </td>
-                        <ng-template #content let-modal class="confirm-modal">
-                          <confirm-modal
-                            modalTitle="Delete Document?"
-                            description="Deleting this document cannot be reversed."
-                          >
-                            <button
-                              type="button"
-                              class="btn btn-link text-dark"
-                              (click)="modal.dismiss()"
-                              translate
-                            >
-                              COMMON.CANCEL
-                            </button>
-                            <button
-                              type="button"
-                              class="btn brand-button--danger"
-                              (click)="removeFile(file, 'document')"
-                              (click)="modal.dismiss()"
-                              translate
-                            >
-                              COMMON.YES_DELETE
-                            </button>
-                          </confirm-modal>
-                        </ng-template>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+                </app-product-document-upload>
               </div>
             </div>
           </div>
@@ -1409,7 +1215,13 @@
   </form>
   <!-- TODO: 2/2 Abstract into component to be used anywhere using inputs and outputs -->
   <div
-    class="d-flex justify-content-between align-items-center py-2 product-edit-actions"
+    class="
+      d-flex
+      justify-content-between
+      align-items-center
+      py-2
+      product-edit-actions
+    "
   >
     <delete-confirm-modal-component
       *ngIf="!isCreatingNew"
@@ -1437,10 +1249,10 @@
           "
           (click)="handleSave()"
         >
-          {{ getSaveBtnText() }}
+          {{ getSaveBtnText() | translate }}
         </button>
         <button
-          class="btn brand-button ml-3"
+          class="btn btn-primary ml-3"
           (click)="handleDiscardChanges()"
           *ngIf="areChanges && !isCreatingNew"
           translate

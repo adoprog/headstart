@@ -1,65 +1,71 @@
-using Headstart.Models.Headstart;
-using Microsoft.AspNetCore.Mvc;
-using OrderCloud.SDK;
 using System.Threading.Tasks;
-using Headstart.Models.Attributes;
-using ordercloud.integrations.library;
-using Headstart.Models;
-using Headstart.API.Commands;
+using Headstart.Common.Commands;
+using Headstart.Common.Models;
+using Microsoft.AspNetCore.Mvc;
 using OrderCloud.Catalyst;
+using OrderCloud.SDK;
 
-namespace Headstart.Common.Controllers
+namespace Headstart.API.Controllers
 {
-    [DocComments("\"Headstart Suppliers\" represents Supplier in Headstart")]
-    [HSSection.Headstart(ListOrder = 2)]
+    /// <summary>
+    /// Suppliers.
+    /// </summary>
     [Route("supplier")]
-    public class SupplierController: BaseController
+    public class SupplierController : CatalystController
     {
+        private readonly ISupplierCommand supplierCommand;
+        private readonly IOrderCloudClient oc;
 
-		private readonly IHSSupplierCommand _command;
-        private readonly IOrderCloudClient _oc;
-        public SupplierController(IHSSupplierCommand command, IOrderCloudClient oc)
+        public SupplierController(ISupplierCommand supplierCommand, IOrderCloudClient oc)
         {
-            _command = command;
-			_oc = oc;
+            this.supplierCommand = supplierCommand;
+            this.oc = oc;
         }
 
-		[DocName("GET HSSupplier")]
-		[HttpGet, Route("me/{supplierID}"), OrderCloudUserAuth]
-		public async Task<HSSupplier> GetMySupplier(string supplierID)
-		{
-			return await _command.GetMySupplier(supplierID, UserContext);
-		}
-
-		[DocName("POST Headstart Supplier")]
-		[HttpPost, OrderCloudUserAuth(ApiRole.SupplierAdmin)]
-		public async Task<HSSupplier> Create([FromBody] HSSupplier supplier)
-		{
-			return await _command.Create(supplier, UserContext.AccessToken);
-		}
-
-		[DocName("GET If Location Deletable")]
-		[HttpGet, Route("candelete/{locationID}"), OrderCloudUserAuth(ApiRole.SupplierAddressAdmin)]
-		public async Task<bool> CanDeleteLocation(string locationID)
-		{
-			var productList = await _oc.Products.ListAsync(filters: $"ShipFromAddressID={locationID}");
-			return productList.Items.Count == 0;
-		}
-
-		[DocName("PATCH Supplier")]
-		[DocIgnore] // PartialSupplier throws an openapi error?
-		[HttpPatch, Route("{supplierID}"), OrderCloudUserAuth]
-		public async Task<HSSupplier> UpdateSupplier(string supplierID, [FromBody] PartialSupplier supplier)
-		{
-			return await _command.UpdateSupplier(supplierID, supplier, UserContext);
-		}
-
-		[DocName("GET Supplier Order Details")]
-		[HttpGet, Route("orderdetails/{supplierOrderID}"), OrderCloudUserAuth(ApiRole.OrderAdmin, ApiRole.OrderReader)]
-		public async Task<HSSupplierOrderData> GetSupplierOrder(string supplierOrderID)
+        /// <summary>
+        /// GET HSSupplier.
+        /// </summary>
+        [HttpGet, Route("me/{supplierID}"), OrderCloudUserAuth]
+        public async Task<HSSupplier> GetMySupplier(string supplierID)
         {
-			return await _command.GetSupplierOrderData(supplierOrderID, UserContext);
+            return await supplierCommand.GetMySupplier(supplierID, UserContext);
         }
 
-	}
+        /// <summary>
+        /// POST Headstart Supplier.
+        /// </summary>
+        [HttpPost, OrderCloudUserAuth(ApiRole.SupplierAdmin)]
+        public async Task<HSSupplier> Create([FromBody] HSSupplier supplier)
+        {
+            return await supplierCommand.Create(supplier, UserContext.AccessToken);
+        }
+
+        /// <summary>
+        /// GET If Location Deletable.
+        /// </summary>
+        [HttpGet, Route("candelete/{locationID}"), OrderCloudUserAuth(ApiRole.SupplierAddressAdmin)]
+        public async Task<bool> CanDeleteLocation(string locationID)
+        {
+            var productList = await oc.Products.ListAsync(filters: $"ShipFromAddressID={locationID}");
+            return productList.Items.Count == 0;
+        }
+
+        /// <summary>
+        /// PATCH Supplier.
+        /// </summary>
+        [HttpPatch, Route("{supplierID}"), OrderCloudUserAuth]
+        public async Task<HSSupplier> UpdateSupplier(string supplierID, [FromBody] PartialSupplier supplier)
+        {
+            return await supplierCommand.UpdateSupplier(supplierID, supplier, UserContext);
+        }
+
+        /// <summary>
+        /// GET Supplier Order Details.
+        /// </summary>
+        [HttpGet, Route("orderdetails/{supplierOrderID}/{orderType}"), OrderCloudUserAuth(ApiRole.OrderAdmin, ApiRole.OrderReader)]
+        public async Task<HSSupplierOrderData> GetSupplierOrder(string supplierOrderID, OrderType orderType)
+        {
+            return await supplierCommand.GetSupplierOrderData(supplierOrderID, orderType, UserContext);
+        }
+    }
 }

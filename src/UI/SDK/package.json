@@ -8,7 +8,7 @@
   "homepage": "https://ordercloud.io/",
   "keywords": [
     "ordercloud",
-    "four51",
+    "sitecore",
     "b2b",
     "b2c",
     "javascript",
@@ -26,7 +26,7 @@
     "node": ">=0.10"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc && node cli-scripts/hash-dist"
   },
   "devDependencies": {
     "@types/node": "^12.19.8",
@@ -35,8 +35,20 @@
     "axios": "^0.19.2",
     "eslint": "^7.14.0",
     "eslint-config-prettier": "^6.15.0",
+    "folder-hash": "^4.0.1",
     "prettier": "^2.2.1",
     "typescript": "~3.7.5"
+  },
+  "dependencies": {
+    "@angular/common": "^12.1.1",
+    "@angular/core": "^12.1.1",
+    "@nguniversal/express-engine": "^12.1.0",
+    "@ordercloud/angular-sdk": "^1.1.0",
+    "express": "^4.15.2",
+    "lodash": "^4.17.21",
+    "ngx-cookie": "^4.1.2",
+    "ordercloud-javascript-sdk": "^4.9.9",
+    "rxjs": "^6.5.4"
   },
   "peerDependencies": {
     "axios": ">=0.19.2"

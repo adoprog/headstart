@@ -1,6 +1,5 @@
+import { Address } from 'ordercloud-javascript-sdk';
 import { HSShipmentItemWithLineItem } from './HSShipmentItemWithLineItem';
-import { Address } from './Address';
-
 export interface HSShipmentWithItems {
     ShipmentItems?: HSShipmentItemWithLineItem[]
     ID?: string

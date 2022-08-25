@@ -1,4 +1,10 @@
-import { OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core'
+import {
+  OnInit,
+  OnDestroy,
+  ChangeDetectorRef,
+  NgZone,
+  Directive,
+} from '@angular/core'
 import { takeWhile } from 'rxjs/operators'
 import { ResourceCrudService } from '@app-seller/shared/services/resource-crud/resource-crud.service'
 import { FormGroup } from '@angular/forms'
@@ -6,12 +12,13 @@ import { Router, ActivatedRoute } from '@angular/router'
 import { REDIRECT_TO_FIRST_PARENT } from '@app-seller/layout/header/header.config'
 import { ListPage } from '@ordercloud/headstart-sdk'
 import { BehaviorSubject } from 'rxjs'
-import { assign as _assign } from 'lodash'
-import { ResourceFormUpdate, ResourceUpdate } from '@app-seller/models/shared.types'
+import { ResourceUpdate } from '@app-seller/models/shared.types'
 import OrderCloudError from 'ordercloud-javascript-sdk/dist/utils/OrderCloudError'
 
+@Directive()
 export abstract class ResourceCrudComponent<ResourceType>
-  implements OnInit, OnDestroy {
+  implements OnInit, OnDestroy
+{
   alive = true
   resourceList: ListPage<ResourceType> = { Meta: {}, Items: [] }
 
@@ -153,18 +160,19 @@ export abstract class ResourceCrudComponent<ResourceType>
   }
 
   async selectResource(resource: any): Promise<void> {
-    const [
-      newURL,
-      queryParams,
-    ] = await this.ocService.constructNewRouteInformation(
-      this.ocService.getResourceID(resource) || ''
-    )
+    const [newURL, queryParams] =
+      await this.ocService.constructNewRouteInformation(
+        this.ocService.getResourceID(resource) || ''
+      )
     this.navigate(newURL, { queryParams })
   }
 
-  updateResource(resourceUpdate: ResourceFormUpdate): void {
-    this.updatedResource = this.ocService.getUpdatedEditableResource(resourceUpdate as ResourceUpdate, this.updatedResource)
-    if(resourceUpdate.form) {
+  updateResource(resourceUpdate: ResourceUpdate): void {
+    this.updatedResource = this.ocService.getUpdatedEditableResource(
+      resourceUpdate,
+      this.updatedResource
+    )
+    if (resourceUpdate.form) {
       this.resourceForm = resourceUpdate.form
     }
     this.changeDetectorRef.detectChanges()
@@ -174,6 +182,7 @@ export abstract class ResourceCrudComponent<ResourceType>
     const resourceUpdate = {
       field,
       value: field === 'Active' ? event.target.checked : event.target.value,
+      form: this.resourceForm,
     }
     this.updateResource(resourceUpdate)
   }
@@ -196,10 +205,8 @@ export abstract class ResourceCrudComponent<ResourceType>
   }
 
   async updateExistingResource(): Promise<void> {
-    // dataIsSaving indicator is used in the resource table to conditionally tell the
-    // submit button to disable
     try {
-      this.dataIsSaving = true
+      this.dataIsSaving = true // disables submit button while loading
       const updatedResource = await this.ocService.updateResource(
         (this.resourceInSelection as any).ID,
         this.updatedResource
@@ -216,7 +223,8 @@ export abstract class ResourceCrudComponent<ResourceType>
 
   setUpdatedResourceAndResourceForm(updatedResource: any): void {
     this.updatedResource = this.ocService.copyResource(updatedResource)
-    this.setForm(this.ocService.copyResource(updatedResource))
+    const originalResource = this.ocService.copyResource(updatedResource)
+    this.setForm(originalResource)
     this.changeDetectorRef.detectChanges()
   }
 

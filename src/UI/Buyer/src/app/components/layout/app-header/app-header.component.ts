@@ -13,16 +13,18 @@ import {
   faTimes,
 } from '@fortawesome/free-solid-svg-icons'
 import { NgbPopover } from '@ng-bootstrap/ng-bootstrap'
-import { Category } from 'ordercloud-javascript-sdk'
+import { Category, ListPage, Supplier } from 'ordercloud-javascript-sdk'
 import { bufferTime, filter, takeWhile } from 'rxjs/operators'
 import { HSOrder, HSLineItem } from '@ordercloud/headstart-sdk'
 import { getScreenSizeBreakPoint } from 'src/app/services/breakpoint.helper'
 import { ShopperContextService } from 'src/app/services/shopper-context/shopper-context.service'
-import { StaticPageService } from 'src/app/services/static-page/static-page.service'
 import { CurrentUser } from 'src/app/models/profile.types'
 import { AppConfig } from 'src/app/models/environment.types'
 import { ProductFilters } from 'src/app/models/filter-config.types'
 import { RouteConfig } from 'src/app/models/shared.types'
+import { SitecoreCDPTrackingService } from 'src/app/services/sitecore-cdp/sitecore-cdp-tracking.service'
+import { LanguageSelectorService } from 'src/app/services/language-selector/language-selector.service'
+import { TranslateService } from '@ngx-translate/core'
 
 @Component({
   templateUrl: './app-header.component.html',
@@ -82,17 +84,23 @@ export class OCMAppHeader implements OnInit {
   faTimes = faTimes
   faBoxOpen = faBoxOpen
   flagIcon: string
+  hasSuppliers = false;
+  currentSupplierList: ListPage<Supplier>
+  selectedLanguage: string
+  languages: string[]
 
   constructor(
     public context: ShopperContextService,
     public appConfig: AppConfig,
-    public staticPageService: StaticPageService
+    private cdp: SitecoreCDPTrackingService,
+    private translate: TranslateService,
+    private languageService: LanguageSelectorService
   ) {
     this.profileRoutes = context.router.getProfileRoutes()
     this.orderRoutes = context.router.getOrderRoutes()
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     this.buildShowOrdersNeedingApprovalAlertListener()
     this.screenSize = getScreenSizeBreakPoint()
     this.categories = this.context.categories.all
@@ -110,13 +118,12 @@ export class OCMAppHeader implements OnInit {
     this.context.router.onUrlChange((path) => (this.activePath = path))
     this.buildAddToCartListener()
     this.flagIcon = this.getCurrencyFlag()
-  }
-
-  // TODO: add PageDocument type to cms library so this is strongly typed
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  get staticPages(): any[] {
-    return this.staticPageService.pages.filter((page) => {
-      return page.Doc.Active && page.Doc.NavigationTitle
+    this.currentSupplierList = await this.getCurrentSupplierList()
+    this.hasSuppliers = this.currentSupplierList.Meta.TotalCount > 0
+    this.languages = this.translate.getLangs()
+    this.selectedLanguage = this.translate.currentLang
+    this.translate.onLangChange.subscribe((event) => {
+      this.selectedLanguage = event.lang;
     })
   }
 
@@ -125,6 +132,20 @@ export class OCMAppHeader implements OnInit {
     const currentUser = this.context.currentUser.get()
     const myRate = rates?.Items.find((r) => r.Currency === currentUser.Currency)
     return myRate?.Icon
+  }
+
+  async getCurrentSupplierList() {
+    this.setBuyerFilterIfNeeded();
+    const supplierList: ListPage<Supplier> = await this.context.supplierFilters.listSuppliers()
+
+    return supplierList;
+  }
+
+  private setBuyerFilterIfNeeded(): void {
+    this.context.supplierFilters.setNonURLFilter(
+      'xp.BuyersServicing',
+      this.context.currentUser.get()?.Buyer?.ID
+    )
   }
 
   toggleCategoryDropdown(bool: boolean): void {
@@ -209,6 +230,7 @@ export class OCMAppHeader implements OnInit {
   }
   searchProducts(searchStr: string): void {
     this.searchTermForProducts = searchStr
+    this.cdp.productSearched(searchStr); 
     this.context.router.toProductList({ search: searchStr })
   }
 
@@ -237,5 +259,9 @@ export class OCMAppHeader implements OnInit {
 
   toggleCollapsed(): void {
     this.isCollapsed = !this.isCollapsed
+  }
+
+  async setLanguage(language: string) {
+    await this.languageService.SetLanguage(language)
   }
 }

@@ -1,5 +1,12 @@
 import { Injectable } from '@angular/core'
-import { Orders, LineItems, Me, LineItemSpec, Order, LineItem } from 'ordercloud-javascript-sdk'
+import {
+  Orders,
+  LineItems,
+  Me,
+  LineItemSpec,
+  Order,
+  LineItem,
+} from 'ordercloud-javascript-sdk'
 import { Subject } from 'rxjs'
 import { OrderStateService } from './order-state.service'
 import { isUndefined as _isUndefined } from 'lodash'
@@ -10,24 +17,25 @@ import {
   ListPage,
 } from '@ordercloud/headstart-sdk'
 import { CheckoutService } from './checkout.service'
-import { listAll } from '../listAll'
 import { CurrentUserService } from '../current-user/current-user.service'
+import { SitecoreSendTrackingService } from '../sitecore-send/sitecore-send-tracking.service'
+import { SitecoreCDPTrackingService } from '../sitecore-cdp/sitecore-cdp-tracking.service'
 
 @Injectable({
   providedIn: 'root',
 })
 export class CartService {
   public onAdd = new Subject<HSLineItem>() // need to make available as observable
-  public onChange: (
-    callback: (lineItems: ListPage<HSLineItem>) => void
-  ) => void
+  public onChange: (callback: (lineItems: ListPage<HSLineItem>) => void) => void
   private initializingOrder = false
   public isCartValidSubject = new Subject<boolean>()
 
   constructor(
     private state: OrderStateService,
     private checkout: CheckoutService,
-    private userService: CurrentUserService
+    private userService: CurrentUserService,
+    private send: SitecoreSendTrackingService,
+    private cdp: SitecoreCDPTrackingService,
   ) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     this.onChange = this.state.onLineItemsChange.bind(this.state)
@@ -39,6 +47,12 @@ export class CartService {
 
   setIsCartValid(isCartValid: boolean): void {
     this.isCartValidSubject.next(isCartValid)
+  }
+
+  async reset(): Promise<void> {
+    this.initializingOrder = true
+    await this.state.reset()
+    this.initializingOrder = false
   }
 
   async getInvalidLineItems(): Promise<HSLineItem[]> {
@@ -72,42 +86,23 @@ export class CartService {
     // order is well defined, line item can be added
     this.onAdd.next(lineItem)
     if (!_isUndefined(this.order.DateCreated)) {
-      const isPrintProduct = lineItem.xp.PrintArtworkURL
-      // Handle quantity changes for non-print products
-      if (!isPrintProduct) {
-        const lineItems = this.state.lineItems.Items
-        if (lineItem?.xp?.KitProductID) {
-          // Kit product line item quantity changes
-          const kitLiWithSameProduct = lineItems.find(
-            (li) =>
-              li.ProductID === lineItem.ProductID &&
-              li?.xp?.KitProductID === lineItem?.xp?.KitProductID
-          )
-          if (
-            kitLiWithSameProduct &&
-            this.hasSameSpecs(lineItem, kitLiWithSameProduct)
-          ) {
-            // combine any line items that have the same productID/specs into one line item
-            lineItem.Quantity += kitLiWithSameProduct.Quantity
-          }
-        } else {
-          // Non-kit product line item quantity changes
-          const lineItemWithMatchingSpecs = lineItems.find(
-            (li) =>
-              li.ProductID === lineItem.ProductID &&
-              this.hasSameSpecs(lineItem, li)
-          )
-          if (lineItemWithMatchingSpecs) {
-            lineItem.Quantity += lineItemWithMatchingSpecs.Quantity
-          }
-        }
+      const lineItems = this.state.lineItems.Items
+      const lineItemWithMatchingSpecs = lineItems.find(
+        (li) =>
+          li.ProductID === lineItem.ProductID &&
+          this.hasSameSpecs(lineItem, li)
+      )
+      if (lineItemWithMatchingSpecs) {
+        lineItem.Quantity += lineItemWithMatchingSpecs.Quantity
       }
-      return await this.upsertLineItem(lineItem)
-    }
-    if (!this.initializingOrder) {
+    } else if (!this.initializingOrder) {
       await this.initializeOrder()
-      return await this.upsertLineItem(lineItem)
     }
+
+    var createdLi = await this.upsertLineItem(lineItem)
+    this.send.addToCart(createdLi);
+    this.cdp.addToCart(createdLi);
+    return createdLi;
   }
 
   async initializeOrder(): Promise<void> {
@@ -121,7 +116,6 @@ export class CartService {
     } finally {
       this.initializingOrder = false
     }
-
   }
 
   async remove(lineItemID: string): Promise<void> {
@@ -141,9 +135,7 @@ export class CartService {
     return Promise.all(req)
   }
 
-  async setQuantity(
-    lineItem: HSLineItem
-  ): Promise<HSLineItem> {
+  async setQuantity(lineItem: HSLineItem): Promise<HSLineItem> {
     try {
       return await this.upsertLineItem(lineItem)
     } finally {
@@ -174,23 +166,21 @@ export class CartService {
     }
   }
 
-  async AddValidLineItemsToCart(validLi: Array<LineItem>): Promise<HSLineItem[]> {
-    const items = validLi.map((li) => (
-      {
-        ProductID: li.Product.ID,
-        Quantity: li.Quantity,
-        Specs: li.Specs,
-        xp: {
-          ImageUrl: li.xp?.ImageUrl,
-        },
-      }
-    ))
-    return await this.addMany(items);
+  async AddValidLineItemsToCart(
+    validLi: Array<LineItem>
+  ): Promise<HSLineItem[]> {
+    const items = validLi.map((li) => ({
+      ProductID: li.Product.ID,
+      Quantity: li.Quantity,
+      Specs: li.Specs,
+      xp: {
+        ImageUrl: li.xp?.ImageUrl,
+      },
+    }))
+    return await this.addMany(items)
   }
 
-  async addMany(
-    lineItem: HSLineItem[]
-  ): Promise<HSLineItem[]> {
+  async addMany(lineItem: HSLineItem[]): Promise<HSLineItem[]> {
     if (_isUndefined(this.order.DateCreated)) {
       await this.initializeOrder()
     }
@@ -225,7 +215,7 @@ export class CartService {
 
     // cannot use this.state.reset because the order index isn't ready immediately after the patch of IsResubmitting
     this.state.order = orderToUpdate
-    this.state.lineItems = await listAll(
+    this.state.lineItems = await HeadStartSDK.Services.ListAll(
       LineItems,
       LineItems.List,
       'Outgoing',
@@ -240,16 +230,14 @@ export class CartService {
       const requests = this.lineItems.Items.map((li) =>
         LineItems.Delete('Outgoing', this.order.ID, li.ID)
       )
+      this.cdp.clearCart();
       await Promise.all(requests)
     } finally {
       await this.state.reset()
     }
   }
 
-  private hasSameSpecs(
-    line1: HSLineItem,
-    line2: HSLineItem
-  ): boolean {
+  private hasSameSpecs(line1: HSLineItem, line2: HSLineItem): boolean {
     if (!line1?.Specs?.length && !line2?.Specs?.length) {
       return true
     }
@@ -279,18 +267,19 @@ export class CartService {
     }
   }
 
-  private async upsertLineItem(
-    lineItem: HSLineItem
-  ): Promise<HSLineItem> {
+  private async upsertLineItem(lineItem: HSLineItem): Promise<HSLineItem> {
     this.isCartValidSubject.next(false)
     try {
       return await HeadStartSDK.Orders.UpsertLineItem(this.order?.ID, lineItem)
     } finally {
       if (this.state.orderPromos?.Items?.length) {
         // if there are pre-existing promos need to recalculate order
-        await this.checkout.calculateOrder()
+        const updatedOrder = await this.checkout.calculateOrder()
+        await this.state.resetCurrentOrder(updatedOrder)
+      } else {
+        await this.state.resetCurrentOrder()
       }
-      await this.state.reset()
+      await this.state.resetCurrentOrder()
       this.isCartValidSubject.next(true)
     }
   }

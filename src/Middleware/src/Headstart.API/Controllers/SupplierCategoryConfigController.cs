@@ -1,73 +1,62 @@
-using Microsoft.AspNetCore.Mvc;
-using OrderCloud.SDK;
-using System.Threading.Tasks;
-using Headstart.Models.Attributes;
-using ordercloud.integrations.library;
-using Headstart.Models;
-using Headstart.Common.Services.CMS;
-using Headstart.Common.Services.CMS.Models;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 using OrderCloud.Catalyst;
+using OrderCloud.SDK;
 
 namespace Headstart.Common.Controllers
 {
-	// At one point we were trying to support a multi-tenant solution and configuration
-	// could not live in the code so we stored these configurations in cosmos
-	// this is no longer the goal and having these configurations stored in a database feels like overkill and adds complexity
-	// once we have more time we should aim to remove the whole notion of supplier filter configs and just have this live in code
+    // At one point we were trying to support a multi-tenant solution and configuration
+    // could not live in the code so we stored these configurations in cosmos
+    // this is no longer the goal and having these configurations stored in a database feels like overkill and adds complexity
+    // once we have more time we should aim to remove the whole notion of supplier filter configs and just have this live in code
 
-    [DocComments("\"Supplier Filter Config\" represents Supplier Category Configuration")]
-    [HSSection.Headstart(ListOrder = 5)]
-    public class SupplierFilterConfigController : BaseController
+    /// <summary>
+    /// Supplier Category Configuration.
+    /// </summary>
+    public class SupplierFilterConfigController : CatalystController
     {
         public SupplierFilterConfigController()
         {
-
         }
 
-        [DocName("GET SupplierCategoryConfig")]
+        /// <summary>
+        /// GET SupplierCategoryConfig.
+        /// </summary>
         [HttpGet, Route("/supplierfilterconfig"), OrderCloudUserAuth(ApiRole.Shopper, ApiRole.SupplierReader)]
-        public async Task<ListPage<SupplierFilterConfigDocument>> Get()
+        public async Task<ListPage<dynamic>> Get()
         {
-			return new ListPage<SupplierFilterConfigDocument>
-			{
-				Items = new List<SupplierFilterConfigDocument>
-				{
-					GetCountriesServicingDoc()
-				}
-			};
+            return await Task.FromResult(new ListPage<dynamic>
+            {
+                Items = new List<dynamic>
+                {
+                    GetCountriesServicingDoc(),
+                },
+            });
         }
 
-		private SupplierFilterConfigDocument GetCountriesServicingDoc()
-		{
-			return new SupplierFilterConfigDocument
-			{
-				ID = "CountriesServicing",
-				Doc = new SupplierFilterConfig
-				{
-					Display = "Countries Servicing",
-					Path = "xp.CountriesServicing",
-					Items = new List<Filter>
-					{
-						new Filter
-						{
-							Text = "UnitedStates",
-							Value = "US"
-						}
-					},
-					AllowSellerEdit = true,
-					AllowSupplierEdit = true,
-					BuyerAppFilterType = "NonUI"
-				}
-			};
-		}
-
-	}
-
-	[SwaggerModel]
-    // swagger generator can't handle composite models so alias into one
-    public class SupplierFilterConfigDocument: Document<SupplierFilterConfig>
-    {
-
+        private dynamic GetCountriesServicingDoc()
+        {
+            return new
+            {
+                ID = "CountriesServicing",
+                Doc = new
+                {
+                    Display = "Countries Servicing",
+                    Path = "xp.CountriesServicing",
+                    Items = new List<dynamic>
+                    {
+                        new
+                        {
+                            Text = "UnitedStates",
+                            Value = "US",
+                        },
+                    },
+                    AllowSellerEdit = true,
+                    AllowSupplierEdit = true,
+                    BuyerAppFilterType = "NonUI",
+                },
+            };
+        }
     }
 }

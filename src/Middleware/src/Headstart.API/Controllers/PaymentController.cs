@@ -1,36 +1,33 @@
-using Headstart.API.Commands;
-using Headstart.Common.Models;
-using Headstart.Models.Attributes;
-using Headstart.Models.Headstart;
-using Microsoft.AspNetCore.Mvc;
-using ordercloud.integrations.library;
-using OrderCloud.Catalyst;
-using OrderCloud.SDK;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Headstart.API.Commands;
+using Headstart.Common.Models;
+using Microsoft.AspNetCore.Mvc;
+using OrderCloud.Catalyst;
+using OrderCloud.SDK;
 
-namespace Headstart.Common.Controllers
+namespace Headstart.API.Controllers
 {
-    [DocComments("\"Headstart Orders\" for handling payment commands in Headstart")]
-    [HSSection.Headstart(ListOrder = 2)]
+    /// <summary>
+    /// Payment commands in Headstart.
+    /// </summary>
     [Route("payments")]
-    public class PaymentController : BaseController
+    public class PaymentController : CatalystController
     {
+        private readonly IPaymentCommand paymentCommand;
 
-        private readonly IPaymentCommand _command;
-        private readonly AppSettings _settings;
-        public PaymentController(IPaymentCommand command, AppSettings settings)
+        public PaymentController(IPaymentCommand paymentCommand)
         {
-            _command = command;
-            _settings = settings;
+            this.paymentCommand = paymentCommand;
         }
 
-        [DocName("Save payments")]
-        [DocComments("Creates or updates payments as needed for this order")]
+        /// <summary>
+        /// Save payments. Creates or updates payments as needed for this order.
+        /// </summary>
         [HttpPut, Route("{orderID}/update"), OrderCloudUserAuth(ApiRole.Shopper)]
         public async Task<IList<HSPayment>> SavePayments(string orderID, [FromBody] PaymentUpdateRequest request)
         {
-            return await _command.SavePayments(orderID, request.Payments, UserContext.AccessToken);
+            return await paymentCommand.SavePayments(orderID, request.Payments, UserContext.AccessToken);
         }
     }
 }

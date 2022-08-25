@@ -1,38 +1,31 @@
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Headstart.API.Commands;
-using Headstart.API.Commands.Zoho;
-using Headstart.Common.Models.Misc;
-using Headstart.Common.Services;
-using Headstart.Common.Services.ShippingIntegration.Models;
-using Headstart.Models;
-using Headstart.Models.Headstart;
+using Headstart.Common.Models;
 using Microsoft.AspNetCore.Mvc;
-using ordercloud.integrations.library;
 using OrderCloud.Catalyst;
+using OrderCloud.Integrations.Emails;
 using OrderCloud.SDK;
 
 namespace Headstart.Common.Controllers
 {
-    [DocIgnore]
     [Route("support")]
-    public class SupportController : BaseController
+    public class SupportController : CatalystController
     {
-        private static ICheckoutIntegrationCommand _checkoutIntegrationCommand;
-        private static IPostSubmitCommand _postSubmitCommand;
-        private readonly IOrderCloudClient _oc;
-        private readonly ISendgridService _sendgrid;
+        private readonly ICheckoutIntegrationCommand checkoutIntegrationCommand;
+        private readonly IPostSubmitCommand postSubmitCommand;
+        private readonly IOrderCloudClient oc;
+        private readonly IEmailServiceProvider emailServiceProvider;
 
-        public SupportController(ICheckoutIntegrationCommand checkoutIntegrationCommand, IPostSubmitCommand postSubmitCommand, IZohoCommand zoho, IOrderCloudClient oc, ISupportAlertService supportAlertService, ISendgridService sendgrid)
+        public SupportController(ICheckoutIntegrationCommand checkoutIntegrationCommand, IPostSubmitCommand postSubmitCommand, IOrderCloudClient oc, IEmailServiceProvider emailServiceProvider)
         {
-            _checkoutIntegrationCommand = checkoutIntegrationCommand;
-            _postSubmitCommand = postSubmitCommand;
-            _oc = oc;
-            _sendgrid = sendgrid;
+            this.checkoutIntegrationCommand = checkoutIntegrationCommand;
+            this.postSubmitCommand = postSubmitCommand;
+            this.oc = oc;
+            this.emailServiceProvider = emailServiceProvider;
         }
 
         [HttpGet, Route("shipping")]
-        public async Task<ShipEstimateResponse> GetShippingRates([FromBody] ShipmentTestModel model)
+        public async Task<ShipEstimateResponse> GetShippingRates([FromBody] ShipmentTestRequest model)
         {
             var payload = new HSOrderCalculatePayload()
             {
@@ -40,31 +33,24 @@ namespace Headstart.Common.Controllers
                 OrderWorksheet = new HSOrderWorksheet()
                 {
                     Order = model.Order,
-                    LineItems = model.LineItems
-                }
+                    LineItems = model.LineItems,
+                },
             };
-            return await _checkoutIntegrationCommand.GetRatesAsync(payload);
+            return await checkoutIntegrationCommand.GetRatesAsync(payload);
         }
 
         [Route("tax/{orderID}")]
         [HttpGet, OrderCloudUserAuth(ApiRole.IntegrationEventAdmin)]
         public async Task<OrderCalculateResponse> CalculateOrder(string orderID)
         {
-            var orderCalculationResponse = await _checkoutIntegrationCommand.CalculateOrder(orderID, UserContext);
+            var orderCalculationResponse = await checkoutIntegrationCommand.CalculateOrder(orderID, UserContext);
             return orderCalculationResponse;
-        }
-
-        [HttpGet, Route("zoho/{orderID}")]
-        public async Task<OrderSubmitResponse> RetryOrderSubmit(string orderID)
-        {
-            var retry = await _postSubmitCommand.HandleZohoRetry(orderID);
-            return retry;
         }
 
         [HttpGet, Route("shipping/validate/{orderID}"), OrderCloudUserAuth(ApiRole.IntegrationEventAdmin)]
         public async Task<OrderSubmitResponse> RetryShippingValidate(string orderID)
         {
-            var retry = await _postSubmitCommand.HandleShippingValidate(orderID, UserContext);
+            var retry = await postSubmitCommand.HandleShippingValidate(orderID, UserContext);
             return retry;
         }
 
@@ -72,26 +58,20 @@ namespace Headstart.Common.Controllers
         [HttpGet, Route("shippingrates/{orderID}")]
         public async Task<ShipEstimateResponse> GetShippingRates(string orderID)
         {
-            return await _checkoutIntegrationCommand.GetRatesAsync(orderID);
+            return await checkoutIntegrationCommand.GetRatesAsync(orderID);
         }
 
         [HttpPost, Route("postordersubmit/{orderID}"), OrderCloudUserAuth]
         public async Task<OrderSubmitResponse> ManuallyRunPostOrderSubmit(string orderID)
         {
-            var worksheet = await _oc.IntegrationEvents.GetWorksheetAsync<HSOrderWorksheet>(OrderDirection.Incoming, orderID);
-            return await _postSubmitCommand.HandleBuyerOrderSubmit(worksheet);
+            var worksheet = await oc.IntegrationEvents.GetWorksheetAsync<HSOrderWorksheet>(OrderDirection.Incoming, orderID);
+            return await postSubmitCommand.HandleBuyerOrderSubmit(worksheet);
         }
 
         [HttpPost, Route("submitcase")]
         public async Task SendSupportRequest([FromForm]SupportCase supportCase)
         {
-            await _sendgrid.EmailGeneralSupportQueue(supportCase);
+            await emailServiceProvider.EmailGeneralSupportQueue(supportCase);
         }
-    }
-
-    public class ShipmentTestModel
-    {
-        public HSOrder Order { get; set; }
-        public List<HSLineItem> LineItems { get; set; }
     }
 }

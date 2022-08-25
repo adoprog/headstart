@@ -1,11 +1,10 @@
 // angular
-import { NgModule, ModuleWithProviders } from '@angular/core'
+import { NgModule } from '@angular/core'
 import { CommonModule } from '@angular/common'
 import { HttpClientModule } from '@angular/common/http'
 import { ReactiveFormsModule, FormsModule } from '@angular/forms'
 import {
   NgbPaginationModule,
-  NgbTabsetModule,
   NgbPopoverModule,
   NgbDropdownModule,
   NgbModalModule,
@@ -25,7 +24,6 @@ import { CarouselSlideDisplayComponent } from '@app-seller/shared/components/car
 import { UserFormComponent } from '@app-seller/shared/components/user-form/user-form.component'
 import { AddressFormComponent } from '@app-seller/shared/components/address-form/address-form.component'
 import { CategoryFormComponent } from './components/category-form/category-form.component'
-import { CategoryDetailsComponent } from './components/category-details/category-details.component'
 import { AddressSuggestionComponent } from './components/address-suggestion/address-suggestion.component'
 import { ProductImagesComponent } from './components/product-images/product-images.component'
 import { ProductFormComponent } from './components/products-form/product-form.component'
@@ -46,18 +44,24 @@ import { ConfirmModal } from './components/confirm-modal/confirm-modal.component
 import { PhoneFormatPipe } from './pipes/phone-format.pipe'
 import { YesNoFormatPipe } from './pipes/yes-no-format.pipe'
 import { SafeHTMLPipe } from './pipes/safe-html.pipe'
-import {UnCamelPipe} from './pipes/un-camel-case.pipe'
+import { UnCamelPipe } from './pipes/un-camel-case.pipe'
 import { UserGroupAssignments } from './components/user-group-assignments/user-group-assignments.component'
 import { LocationIDInputDirective } from './directives/location-id-input.directive'
 import { ActionMenuComponent } from './components/action-menu/action-menu.component'
 import { TranslateModule } from '@ngx-translate/core'
-import { CmsAdminModule } from '@ordercloud/angular-cms-components'
 import { ResourceBreadcrumbsComponent } from './components/resource-breadcrumbs/resource-breadcrumbs.component'
 import { ProductVisibilityAssignments } from './components/buyer-visibility/product-visibility-assignments/product-visibility-assignments.component'
+import { RelatedProductsComponent } from './components/related-products/related-products.component'
 import { BuyerVisibilityConfiguration } from './components/buyer-visibility/buyer-visibility-configuration/buyer-visibility-configuration.component'
 import { ProductCategoryAssignment } from './components/buyer-visibility/product-category-assignment/product-category-assignment.component'
 import { ResourceListMeta } from './components/resource-list-meta/resource-list-meta.component'
 import { ProductNameWithSpecsPipe } from './pipes/product-name-with-specs.pipe'
+import { RouterModule } from '@angular/router'
+import { RmaStatusPipe } from './pipes/rma-status.pipe'
+import { RmaTypePipe } from './pipes/rma-type.pipe'
+import { SubmittedOrderStatusPipe } from './pipes/submitted-order-status.pipe'
+import { LineItemStatusPipe } from './pipes/lineitem-status.pipe'
+import { RmaReturnReasonPipe } from './pipes/rma-return-reason.pipe'
 
 @NgModule({
   imports: [
@@ -66,6 +70,7 @@ import { ProductNameWithSpecsPipe } from './pipes/product-name-with-specs.pipe'
     CommonModule,
     HttpClientModule,
     ReactiveFormsModule,
+    RouterModule,
 
     // 3rd party UI
     FontAwesomeModule,
@@ -74,7 +79,6 @@ import { ProductNameWithSpecsPipe } from './pipes/product-name-with-specs.pipe'
     NgbPopoverModule,
     NgbDropdownModule,
     NgbPaginationModule,
-    NgbTabsetModule,
     NgbModalModule,
     NgbDatepickerModule,
     NgbTooltipModule,
@@ -83,9 +87,6 @@ import { ProductNameWithSpecsPipe } from './pipes/product-name-with-specs.pipe'
 
     // Quill
     QuillModule.forRoot(),
-
-    // OrderCloud CMS Components
-    CmsAdminModule,
   ],
   exports: [
     // angular
@@ -96,13 +97,9 @@ import { ProductNameWithSpecsPipe } from './pipes/product-name-with-specs.pipe'
     // 3rd party UI
     FontAwesomeModule,
     NgbPaginationModule,
-    NgbTabsetModule,
     NgbDropdownModule,
     NgbProgressbarModule,
     NgbCollapseModule,
-
-    // OrderCloud CMS Components
-    CmsAdminModule,
 
     // app components
     SearchComponent,
@@ -111,7 +108,6 @@ import { ProductNameWithSpecsPipe } from './pipes/product-name-with-specs.pipe'
     UserFormComponent,
     AddressFormComponent,
     CategoryFormComponent,
-    CategoryDetailsComponent,
     AddressSuggestionComponent,
     ResourceSelectDropdown,
     ProductImagesComponent,
@@ -128,6 +124,11 @@ import { ProductNameWithSpecsPipe } from './pipes/product-name-with-specs.pipe'
     DeleteConfirmModal,
     ReturnForm,
     PhoneFormatPipe,
+    RmaStatusPipe,
+    RmaTypePipe,
+    SubmittedOrderStatusPipe,
+    LineItemStatusPipe,
+    RmaReturnReasonPipe,
     YesNoFormatPipe,
     SafeHTMLPipe,
     ProductNameWithSpecsPipe,
@@ -138,6 +139,7 @@ import { ProductNameWithSpecsPipe } from './pipes/product-name-with-specs.pipe'
     TranslateModule,
     ResourceBreadcrumbsComponent,
     ProductVisibilityAssignments,
+    RelatedProductsComponent,
     BuyerVisibilityConfiguration,
     ProductCategoryAssignment,
     ResourceListMeta,
@@ -149,7 +151,6 @@ import { ProductNameWithSpecsPipe } from './pipes/product-name-with-specs.pipe'
     UserFormComponent,
     AddressFormComponent,
     CategoryFormComponent,
-    CategoryDetailsComponent,
     AddressSuggestionComponent,
     ProductImagesComponent,
     ResourceSelectDropdown,
@@ -169,23 +170,22 @@ import { ProductNameWithSpecsPipe } from './pipes/product-name-with-specs.pipe'
     ActionMenuComponent,
     UserGroupAssignments,
     ProductVisibilityAssignments,
+    RelatedProductsComponent,
     BuyerVisibilityConfiguration,
     ProductCategoryAssignment,
     ResourceListMeta,
     // Pipes
     PhoneFormatPipe,
+    RmaStatusPipe,
+    RmaTypePipe,
+    SubmittedOrderStatusPipe,
+    LineItemStatusPipe,
+    RmaReturnReasonPipe,
     YesNoFormatPipe,
     ResourceBreadcrumbsComponent,
     SafeHTMLPipe,
     ProductNameWithSpecsPipe,
-    UnCamelPipe
+    UnCamelPipe,
   ],
 })
-export class SharedModule {
-  static forRoot(): ModuleWithProviders {
-    return {
-      ngModule: SharedModule,
-      providers: [],
-    }
-  }
-}
+export class SharedModule {}

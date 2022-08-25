@@ -44,7 +44,8 @@ import { CurrentUserService } from '@app-seller/shared/services/current-user/cur
   },
 })
 export class ResourceTableComponent
-  implements OnInit, OnDestroy, AfterViewChecked {
+  implements OnInit, OnDestroy, AfterViewChecked
+{
   @ViewChild('popover', { static: false })
   public popover: NgbPopover
   faFilter = faFilter
@@ -186,13 +187,13 @@ export class ResourceTableComponent
 
   mapProductTypes(types: string[]): Params[] {
     if (types) {
-      const mappedTypes = types.map((pt) => {
-        const link = pt
+      const mappedTypes = types.map((type) => {
+        const link = type
           .match(/[A-Z][a-z]+/g)
           .map((t) => t.toLowerCase())
           .join('-')
         return {
-          Display: `${pt.match(/[A-Z][a-z]+/g).join(' ')} Product`,
+          Display: `COMMON.PRODUCT_TYPES.${type.toUpperCase()}`,
           Link: link,
         }
       })
@@ -210,7 +211,7 @@ export class ResourceTableComponent
     this.availableProductTypes =
       formattedSupplierProductTypes.length > 0
         ? formattedSupplierProductTypes
-        : this.mapProductTypes(['Standard', 'Quote', 'PurchaseOrder'])
+        : this.mapProductTypes(['Standard', 'Quote', 'Bundle'])
   }
 
   getTitle(
@@ -323,7 +324,8 @@ export class ResourceTableComponent
 
   private async redirectToFirstParentIfNeeded() {
     if (this.parentResourceService) {
-      const parentResourceID = await this.parentResourceService.getParentResourceID()
+      const parentResourceID =
+        await this.parentResourceService.getParentResourceID()
       if (parentResourceID === REDIRECT_TO_FIRST_PARENT) {
         await this.parentResourceService.listResources()
         this._ocService.selectParentResource(
@@ -355,9 +357,10 @@ export class ResourceTableComponent
             this.selectedParentResourceName = parentResource.Name
         }
         if (params && parentResourceID) {
-          const parentResource = await this.parentResourceService.findOrGetResourceByID(
-            parentResourceID
-          )
+          const parentResource =
+            await this.parentResourceService.findOrGetResourceByID(
+              parentResourceID
+            )
           if (parentResource)
             this.selectedParentResourceName = parentResource.Name
         }
@@ -486,7 +489,8 @@ export class ResourceTableComponent
       resourceInSelection.Name ||
       resourceInSelection.Username ||
       resourceInSelection.AddressName ||
-      resourceInSelection.AppName
+      resourceInSelection.AppName ||
+      resourceInSelection.RMANumber
     )
   }
   showFilterBar(): boolean {

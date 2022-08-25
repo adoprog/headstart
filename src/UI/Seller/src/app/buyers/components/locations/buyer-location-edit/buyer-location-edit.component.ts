@@ -1,6 +1,5 @@
 import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core'
 import { FormGroup, Validators, FormControl } from '@angular/forms'
-import { Address, BuyerAddress } from '@ordercloud/angular-sdk'
 import { BuyerLocationService } from '../buyer-location.service'
 import { ValidatePhone, ValidateEmail } from '@app-seller/validators/validators'
 import { Router } from '@angular/router'
@@ -17,6 +16,12 @@ import { CatalogsTempService } from '@app-seller/shared/services/middleware-api/
 import { REDIRECT_TO_FIRST_PARENT } from '@app-seller/layout/header/header.config'
 import { ResourceUpdate } from '@app-seller/models/shared.types'
 import { SupportedCountries } from '@app-seller/models/currency-geography.types'
+import {
+  ApprovalRules,
+  OrderApproval,
+  Address,
+  BuyerAddress,
+} from 'ordercloud-javascript-sdk'
 @Component({
   selector: 'app-buyer-location-edit',
   templateUrl: './buyer-location-edit.component.html',
@@ -52,6 +57,7 @@ export class BuyerLocationEditComponent implements OnInit {
   dataIsSaving = false
   countryOptions: SupportedCountries[]
   catalogs: HSCatalog[] = []
+  approvalRule: OrderApproval
 
   constructor(
     private buyerLocationService: BuyerLocationService,
@@ -104,16 +110,13 @@ export class BuyerLocationEditComponent implements OnInit {
         Validators.required
       ),
       Phone: new FormControl(buyerLocation.Address.Phone, ValidatePhone),
-      Email: new FormControl(buyerLocation.Address.xp.Email, ValidateEmail),
-      LocationID: new FormControl(buyerLocation.Address.xp.LocationID),
+      Email: new FormControl(buyerLocation.Address.xp?.Email, ValidateEmail),
+      LocationID: new FormControl(buyerLocation.Address.xp?.LocationID),
       Currency: new FormControl(
         buyerLocation.UserGroup.xp.Currency,
         Validators.required
       ),
-      // TODO: remove this workaround when headstart sdk has been updated to include correct type
-      BillingNumber: new FormControl(
-        (buyerLocation.Address.xp as any).BillingNumber
-      ),
+      BillingNumber: new FormControl(buyerLocation.Address.xp?.BillingNumber),
       CatalogAssignments: new FormControl(
         undefined,
         this.isCreatingNew ? [Validators.required] : undefined
@@ -158,9 +161,12 @@ export class BuyerLocationEditComponent implements OnInit {
     try {
       this.dataIsSaving = true
       this.buyerLocationEditable.UserGroup.xp.Type = 'BuyerLocation'
-      this.buyerLocationEditable.Address.AddressName = this.buyerLocationEditable?.Address?.CompanyName
-      this.buyerLocationEditable.UserGroup.ID = this.buyerLocationEditable.Address.ID
-      this.buyerLocationEditable.UserGroup.xp.Country = this.buyerLocationEditable.Address.Country
+      this.buyerLocationEditable.Address.AddressName =
+        this.buyerLocationEditable?.Address?.CompanyName
+      this.buyerLocationEditable.UserGroup.ID =
+        this.buyerLocationEditable.Address.ID
+      this.buyerLocationEditable.UserGroup.xp.Country =
+        this.buyerLocationEditable.Address.Country
       const newBuyerLocation = await HeadStartSDK.BuyerLocations.Create(
         this.buyerID,
         this.buyerLocationEditable
@@ -185,8 +191,10 @@ export class BuyerLocationEditComponent implements OnInit {
   async updateBuyerLocation(): Promise<void> {
     try {
       this.dataIsSaving = true
-      this.buyerLocationEditable.UserGroup.xp.Country = this.buyerLocationEditable.Address.Country
-      var assignments = this.resourceForm.controls['CatalogAssignments']?.value
+      this.buyerLocationEditable.UserGroup.xp.Country =
+        this.buyerLocationEditable.Address.Country
+      const assignments =
+        this.resourceForm.controls['CatalogAssignments']?.value
       this.buyerLocationEditable.UserGroup.xp.CatalogAssignments =
         assignments?.CatalogIDs
       const updatedBuyerLocation = await HeadStartSDK.BuyerLocations.Save(
@@ -219,10 +227,11 @@ export class BuyerLocationEditComponent implements OnInit {
   updateBuyerLocationResource(buyerLocationUpdate: any): void {
     const resourceToEdit =
       this.buyerLocationEditable || this.buyerLocationService.emptyResource
-    this.buyerLocationEditable = this.buyerLocationService.getUpdatedEditableResource(
-      buyerLocationUpdate,
-      resourceToEdit
-    )
+    this.buyerLocationEditable =
+      this.buyerLocationService.getUpdatedEditableResource(
+        buyerLocationUpdate,
+        resourceToEdit
+      )
     this.areChanges = this.buyerLocationService.checkForChanges(
       this.buyerLocationEditable,
       this.buyerLocationStatic
@@ -245,7 +254,8 @@ export class BuyerLocationEditComponent implements OnInit {
       (country) => country.abbreviation === countryCode
     )
     this.resourceForm.controls.Currency.setValue(selectedCountry.currency)
-    this.buyerLocationEditable.UserGroup.xp.Currency = this.resourceForm.value.Currency
+    this.buyerLocationEditable.UserGroup.xp.Currency =
+      this.resourceForm.value.Currency
   }
 
   handleDiscardChanges(): void {
@@ -261,11 +271,18 @@ export class BuyerLocationEditComponent implements OnInit {
     this.resourceForm.controls['CatalogAssignments']?.setValue(event)
   }
 
+  handleUpdateApproval(event): void {
+    this.approvalRule = event
+  }
+
   private async handleSelectedAddressChange(address: Address): Promise<void> {
-    const hsBuyerLocation = await HeadStartSDK.BuyerLocations.Get(
-      this.buyerID,
-      address.ID
-    )
+    const [hsBuyerLocation, approvalRules] = await Promise.all([
+      HeadStartSDK.BuyerLocations.Get(this.buyerID, address.ID),
+      ApprovalRules.List(this.buyerID, {
+        filters: { ApprovingGroupID: `${address.ID}-OrderApprover` },
+      }),
+    ])
+    this.approvalRule = approvalRules?.Items[0]
     this.refreshBuyerLocationData(hsBuyerLocation)
   }
 }

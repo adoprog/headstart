@@ -1,5 +1,9 @@
 export function setProductEditTab(section: string): number {
-  return ProductEditTabMapper[section]
+  const tabIndex = ProductEditTabMapper[section] as number | undefined
+  if (typeof tabIndex === 'undefined') {
+    throw new Error(`Section ${section} has no tab index mapping defined`)
+  }
+  return tabIndex
 }
 
 export const ProductEditTabMapper = {
@@ -19,4 +23,5 @@ export const TabIndexMapper = {
   4: 'filters',
   5: 'variants',
   6: 'images-and-documents',
+  7: 'related-products',
 }

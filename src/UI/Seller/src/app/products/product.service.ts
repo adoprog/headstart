@@ -2,17 +2,14 @@ import { Injectable } from '@angular/core'
 import { Router, ActivatedRoute } from '@angular/router'
 import {
   Product,
-  OcPriceScheduleService,
-  OcCatalogService,
   ProductAssignment,
-  OcCategoryService,
+  Categories,
   CategoryProductAssignment,
-} from '@ordercloud/angular-sdk'
+} from 'ordercloud-javascript-sdk'
 import { ResourceCrudService } from '@app-seller/shared/services/resource-crud/resource-crud.service'
 import { CurrentUserService } from '@app-seller/shared/services/current-user/current-user.service'
 import { Products } from 'ordercloud-javascript-sdk'
 
-// TODO - this service is only relevent if you're already on the product details page. How can we enforce/inidcate that?
 @Injectable({
   providedIn: 'root',
 })
@@ -35,25 +32,19 @@ export class ProductService extends ResourceCrudService<Product> {
       Inventory: null,
       DefaultSupplierID: null,
       xp: {
-        IntegrationData: null,
-        IsResale: false,
         Facets: {},
         Images: [],
-        Status: null,
-        HasVariants: false,
         Note: '',
         Tax: {
-          Category: null, // SEB-827 default tax category to TPP
           Code: null,
           Description: null,
+          LongDescription: null,
         },
         UnitOfMeasure: {
           Unit: null,
           Qty: null,
         },
         ProductType: null,
-        StaticContent: null,
-        ArtworkRequired: false,
         FreeShipping: false,
         FreeShippingMessage: 'Free Shipping',
       },
@@ -82,9 +73,6 @@ export class ProductService extends ResourceCrudService<Product> {
   constructor(
     router: Router,
     activatedRoute: ActivatedRoute,
-    private ocCategoryService: OcCategoryService,
-    private ocPriceScheduleService: OcPriceScheduleService,
-    private ocCatalogService: OcCatalogService,
     public currentUserService: CurrentUserService
   ) {
     super(
@@ -124,18 +112,14 @@ export class ProductService extends ResourceCrudService<Product> {
     buyerID: string
   ): Promise<void> {
     const addRequests = add.map((newAssignment) =>
-      this.ocCategoryService
-        .SaveProductAssignment(buyerID, newAssignment)
-        .toPromise()
+      Categories.SaveProductAssignment(buyerID, newAssignment)
     )
     const deleteRequests = del.map((assignmentToRemove) =>
-      this.ocCategoryService
-        .DeleteProductAssignment(
-          buyerID,
-          assignmentToRemove.CategoryID,
-          assignmentToRemove.ProductID
-        )
-        .toPromise()
+      Categories.DeleteProductAssignment(
+        buyerID,
+        assignmentToRemove.CategoryID,
+        assignmentToRemove.ProductID
+      )
     )
     await Promise.all([...addRequests, ...deleteRequests])
   }

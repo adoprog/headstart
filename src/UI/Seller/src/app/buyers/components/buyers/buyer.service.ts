@@ -9,13 +9,10 @@ import { ListArgs } from '@ordercloud/headstart-sdk'
 export const BUYER_SUB_RESOURCE_LIST = [
   { route: 'users', display: 'ADMIN.NAV.USERS' },
   { route: 'locations', display: 'ALIAS.BUYER_LOCATIONS' },
-  { route: 'payments', display: 'ADMIN.NAV.PAYMENTS' },
-  { route: 'approvals', display: 'ADMIN.NAV.APPROVALS' },
   { route: 'catalogs', display: 'ADMIN.NAV.CATALOGS' },
   { route: 'categories', display: 'ADMIN.NAV.CATEGORIES' },
 ]
 
-// TODO - this service is only relevent if you're already on the product details page. How can we enforce/inidcate that?
 @Injectable({
   providedIn: 'root',
 })
@@ -25,11 +22,8 @@ export class BuyerService extends ResourceCrudService<Buyer> {
       Name: '',
       Active: true,
       xp: {
-        ChiliPublishFolder: '',
+        MarkupPercent: 0,
       },
-    },
-    Markup: {
-      Percent: 0,
     },
   }
   constructor(

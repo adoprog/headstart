@@ -13,8 +13,7 @@ import { CartService } from "../order/cart.service";
 import { OrderStateService } from "../order/order-state.service";
 import { CurrentOrderService } from "../order/order.service";
 import { ProductCategoriesService } from "../product-categories/product-categories.service";
-import { ShopperContextService } from "../shopper-context/shopper-context.service";
-import { StaticPageService } from "../static-page/static-page.service";
+import { SitecoreCDPTrackingService } from "../sitecore-cdp/sitecore-cdp-tracking.service";
 
 
 @Injectable()
@@ -25,16 +24,17 @@ export class BaseResolveService {
     private exchangeRates: ExchangeRatesService,
     private ordersToApprove: OrdersToApproveStateService,
     private productCategories: ProductCategoriesService,
-    private staticPageService: StaticPageService,
     private orderService: OrderStateService,
     private toastrService: ToastrService,
     private orderHistory: OrderHistoryService,
     private cartService: CartService,
-    private router: Router
+    private router: Router,
+    private cdp: SitecoreCDPTrackingService
   ) { }
 
   async resolve(): Promise<void> {
     await this.currentUser.reset()
+    this.cdp.identify();
     var reorderResponse: OrderReorderResponse
     const anonLineItems = this.orderService.lineItems
     const anonOrder = this.orderService.order
@@ -68,7 +68,7 @@ export class BaseResolveService {
   private shouldTransferCart(anonLineItems: ListPage<HSLineItem>): boolean {
     const isAnon = this.currentUser.isAnonymous() // user is not anonymous
     const wasAnon = this.currentUser.isAnonSubject.value;
-    return !isAnon && wasAnon && anonLineItems?.Items?.length >0;
+    return !isAnon && wasAnon && anonLineItems?.Items?.length > 0;
   }
 
   private async refreshData(): Promise<void> {
@@ -76,7 +76,6 @@ export class BaseResolveService {
     const ordersToApprove = this.ordersToApprove.reset()
     const categories = this.productCategories.setCategories()
     const exchangeRates = this.exchangeRates.reset()
-    this.staticPageService.initialize()
     await Promise.all([order, ordersToApprove, categories, exchangeRates])
   }
 

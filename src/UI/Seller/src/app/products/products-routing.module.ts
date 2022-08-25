@@ -8,6 +8,7 @@ const routes: Routes = [
   { path: '', component: ProductTableComponent, pathMatch: 'prefix' },
   { path: 'new/standard', component: ProductTableComponent, pathMatch: 'full' },
   { path: 'new/quote', component: ProductTableComponent, pathMatch: 'full' },
+  { path: 'new/bundle', component: ProductTableComponent, pathMatch: 'full' },
   {
     path: 'new/purchase-order',
     component: ProductTableComponent,
@@ -16,6 +17,12 @@ const routes: Routes = [
   { path: ':productID', component: ProductTableComponent, pathMatch: 'full' },
   {
     path: ':productID/catalog-assignments',
+    component: ProductTableComponent,
+    pathMatch: 'full',
+    canActivate: [IsSellerGuard],
+  },
+  {
+    path: ':productID/related-products',
     component: ProductTableComponent,
     pathMatch: 'full',
     canActivate: [IsSellerGuard],

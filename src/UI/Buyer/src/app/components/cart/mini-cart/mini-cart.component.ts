@@ -29,8 +29,6 @@ export class OCMMiniCart implements OnInit {
 
   toProductDetails(
     productID: string,
-    configurationID: string,
-    documentID: string
   ): void {
     this.context.router.toProductDetails(productID)
     this.navigate.emit()
@@ -39,5 +37,9 @@ export class OCMMiniCart implements OnInit {
   toCheckout(): void {
     this.context.router.toCheckout()
     this.navigate.emit()
+  }
+
+  isQuoteOrder(): boolean {
+    return this.order?.xp?.OrderType === 'Quote'
   }
 }

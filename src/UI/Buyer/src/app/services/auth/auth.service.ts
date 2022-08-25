@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core'
+import { Injectable, Injector } from '@angular/core'
 import { Observable, of, BehaviorSubject, from } from 'rxjs'
 import { tap, catchError, finalize } from 'rxjs/operators'
 import { ActivatedRoute, Router } from '@angular/router'
@@ -19,10 +19,9 @@ import { HeadStartSDK } from '@ordercloud/headstart-sdk'
 import { OrdersToApproveStateService } from '../order-history/order-to-approve-state.service'
 import { ApplicationInsightsService } from '../application-insights/application-insights.service'
 import { TokenHelperService } from '../token-helper/token-helper.service'
-import { ContentManagementClient } from '@ordercloud/cms-sdk'
 import { AppConfig } from 'src/app/models/environment.types'
 import { BaseResolveService } from '../base-resolve/base-resolve.service'
-import BuyerLocations from '@ordercloud/headstart-sdk/dist/api/BuyerLocations'
+import { LanguageSelectorService } from 'src/app/services/language-selector/language-selector.service'
 
 @Injectable({
   providedIn: 'root',
@@ -38,18 +37,22 @@ export class AuthService {
     false
   )
 
+  appInsightsService: ApplicationInsightsService;
+
   constructor(
     private cookieService: CookieService,
+    private languageService: LanguageSelectorService,
     private router: Router,
     private currentOrder: CurrentOrderService,
     private currentUser: CurrentUserService,
     private ordersToApproveStateService: OrdersToApproveStateService,
     private appConfig: AppConfig,
     private tokenHelper: TokenHelperService,
-    private appInsightsService: ApplicationInsightsService,
     private activatedRoute: ActivatedRoute,
-    private baseResolveService: BaseResolveService
-  ) {}
+    private baseResolveService: BaseResolveService,
+    private injector: Injector
+  ) {
+  }
 
   // All this isLoggedIn stuff is only used in the header wrapper component
   // remove once its no longer needed.
@@ -97,8 +100,14 @@ export class AuthService {
 
   async register(me: MeUser): Promise<AccessTokenBasic> {
     const anonToken = await this.getAnonymousToken()
-    const token = await Me.Register(me, {anonUserToken: anonToken.access_token})
-    const newUser = await Me.Get({accessToken: token.access_token})
+    const anonUser = this.currentUser.get();
+    const countryPatchObj = {
+      xp: {
+        Country: anonUser?.xp?.Country || "US"
+      }
+    }
+    const token = await Me.Register(me, { anonUserToken: anonToken.access_token })
+    const newUser = await Me.Patch(countryPatchObj, { accessToken: token.access_token })
     // temporary workaround for platform issue
     // need to remove and reset userGroups for newly registered user to see products
     // issue: https://four51.atlassian.net/browse/EX-2222
@@ -118,6 +127,8 @@ export class AuthService {
       this.appConfig.clientID,
       this.appConfig.scope
     )
+    this.appInsightsService = this.injector.get(ApplicationInsightsService);
+
     this.appInsightsService.setUserID(userName)
     this.loginWithTokens(
       creds.access_token,
@@ -125,8 +136,11 @@ export class AuthService {
       false,
       rememberMe
     )
+
+    await this.languageService.SetTranslateLanguage()
+
     const urlParams = this.activatedRoute.snapshot.queryParams
-    if(urlParams.redirect){
+    if (urlParams.redirect) {
       void this.router.navigate([`/${urlParams.redirect}`])
     } else {
       void this.router.navigate(['/home'])
@@ -141,8 +155,6 @@ export class AuthService {
     rememberMe = false
   ): void {
     this.tokenHelper.setIsSSO(isSSO)
-    this.setCMSTokenIfNeeded(token)
-    HeadStartSDK.Tokens.SetAccessToken(token)
     this.setToken(token)
     if (rememberMe && refreshToken) {
       /**
@@ -159,12 +171,14 @@ export class AuthService {
   async anonymousLogin(): Promise<AccessToken> {
     try {
       const anonToken = await this.getAnonymousToken()
-      this.setCMSTokenIfNeeded(anonToken.access_token)
-      HeadStartSDK.Tokens.SetAccessToken(anonToken.access_token)
       this.setToken(anonToken.access_token)
+      await this.languageService.SetTranslateLanguage()
       return anonToken
     } catch (err) {
-      void this.logout()
+      let retryLogin = !(err?.errors?.error === 'invalid_grant' &&
+          err?.errors?.error_description === 'Default context user required for client credentials grant')
+      void this.logout(retryLogin)
+      await this.languageService.SetTranslateLanguage()
       throw new Error(err)
     }
   }
@@ -176,30 +190,18 @@ export class AuthService {
     )
   }
 
-  setCMSTokenIfNeeded(token: string) {
-    if(this.appConfig.cmsUrl && this.appConfig.cmsUrl !== '') {
-      ContentManagementClient.Tokens.SetAccessToken(token)
-    }
-  }
-
-  removeCMSTokenIfNeeded() {
-    if(this.appConfig.cmsUrl && this.appConfig.cmsUrl !== '') {
-      ContentManagementClient.Tokens.RemoveAccessToken()
-    }
-  }
-
-  async logout(): Promise<void> {
+  async logout(loginAnon : boolean = true): Promise<void> {
     Tokens.RemoveAccessToken()
-    this.removeCMSTokenIfNeeded()
-    HeadStartSDK.Tokens.RemoveAccessToken()
     this.isLoggedIn = false
+    this.appInsightsService = this.injector.get(ApplicationInsightsService);
     this.appInsightsService.clearUser()
-    if (this.appConfig.anonymousShoppingEnabled) {
+    if (this.appConfig.anonymousShoppingEnabled && loginAnon) {
       await this.anonymousLogin()
       void this.router.navigate(['home']).then(async () => {
         await this.baseResolveService.resolve()
       })
     } else {
+      await this.languageService.SetTranslateLanguage()
       void this.router.navigate(['/login'])
     }
   }

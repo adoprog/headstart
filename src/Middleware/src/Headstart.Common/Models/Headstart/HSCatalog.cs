@@ -1,38 +1,16 @@
-﻿using ordercloud.integrations.library;
-using OrderCloud.SDK;
-using System.Collections.Generic;
+﻿using OrderCloud.SDK;
 
-namespace Headstart.Models
+namespace Headstart.Common.Models
 {
-    [SwaggerModel]
-    public class HSCatalog : UserGroup<CatalogXp>, IHSObject
+    public class HSCatalog : UserGroup<UserGroupCatalogXp>, IHSObject
     {
     }
 
-    [SwaggerModel]
-    public class PartialHSCatalog : PartialUserGroup<CatalogXp>
+    public class UserGroupCatalogXp
     {
-    }
-
-    // potentially use this for the api later
-    [SwaggerModel]
-    public class HSCatalogAssignment : IHSObject
-    {
-        // ID not used but to get marketplaceobject extension working for now
-        public string ID { get; set; }
-        public string LocationID { get; set; }
-        public string CatalogID { get; set; }
-    }
-
-    [SwaggerModel]
-    public class HSCatalogAssignmentRequest
-    {
-        public List<string> CatalogIDs { get; set;}
-    }
-
-    [SwaggerModel]
-    public class CatalogXp
-    {
+        /// <summary>
+        /// Provides context type to the user group to drive functionality. User groups created with this xp will always be of type "Catalog".
+        /// </summary>
         public string Type { get; set; } = "Catalog";
     }
 }

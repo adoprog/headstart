@@ -6,23 +6,47 @@
     <LangVersion>8</LangVersion>
     <ApplicationInsightsResourceId>/subscriptions/736cd8bd-0185-4184-b3dd-8c372c076f3f/resourceGroups/Marketplace/providers/microsoft.insights/components/marketplace-middleware</ApplicationInsightsResourceId>
   </PropertyGroup>
-
+  
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+  
   <ItemGroup>
     <Folder Include="wwwroot\" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\..\..\..\docs\Reference.md" Link="Reference.md">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.16.0" />
-    <PackageReference Include="SendGrid" Version="9.22.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.12" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.0.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="6.2.3" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.Alerts\OrderCloud.Integrations.Alerts.csproj" />
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.Avalara\OrderCloud.Integrations.Avalara.csproj" />
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.AzureServiceBus\OrderCloud.Integrations.AzureServiceBus.csproj" />
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.AzureStorage\OrderCloud.Integrations.AzureStorage.csproj" />
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.CardConnect\OrderCloud.Integrations.CardConnect.csproj" />
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.CMS\OrderCloud.Integrations.CMS.csproj" />
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.CosmosDB\OrderCloud.Integrations.CosmosDB.csproj" />
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.EasyPost\OrderCloud.Integrations.EasyPost.csproj" />
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.Emails\OrderCloud.Integrations.Emails.csproj" />
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.EnvironmentSeed\OrderCloud.Integrations.EnvironmentSeed.csproj" />
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.ExchangeRates\OrderCloud.Integrations.ExchangeRates.csproj" />
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.Orchestration\OrderCloud.Integrations.Orchestration.csproj" />
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.Reporting\OrderCloud.Integrations.Reporting.csproj" />
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.RMAs\OrderCloud.Integrations.RMAs.csproj" />
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.SendGrid\OrderCloud.Integrations.SendGrid.csproj" />
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.Smarty\OrderCloud.Integrations.Smarty.csproj" />
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.TaxJar\OrderCloud.Integrations.TaxJar.csproj" />
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.Vertex\OrderCloud.Integrations.Vertex.csproj" />
+    <ProjectReference Include="..\..\integrations\OrderCloud.Integrations.Zoho\OrderCloud.Integrations.Zoho.csproj" />
     <ProjectReference Include="..\Headstart.Common\Headstart.Common.csproj" />
   </ItemGroup>
 
@@ -37,6 +61,17 @@
     </Content>
     <Content Include="Web.Release.config">
       <DependentUpon>web.config</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Update="wwwroot\i18n\en.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\i18n\fr.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\i18n\jp.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 </Project>

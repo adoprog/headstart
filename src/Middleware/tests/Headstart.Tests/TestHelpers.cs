@@ -1,22 +1,18 @@
-﻿using Microsoft.IdentityModel.Tokens;
-using ordercloud.integrations.library;
-using OrderCloud.Catalyst;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Headstart.Tests
 {
     public static class TestHelpers
     {
         /// <summary>
-        /// use to access values on dynamics
+        /// use to access values on dynamics.
         /// </summary>
-        /// <param name="source">the thing to drill into</param>
-        /// <param name="accessor">typically the name of the property, use dot notation to access nested values</param>
-        /// <returns></returns>
+        /// <param name="source">the thing to drill into.</param>
+        /// <param name="accessor">typically the name of the property, use dot notation to access nested values.</param>
         public static dynamic GetDynamicVal(dynamic source, string accessor)
         {
             var props = accessor.Split('.');
@@ -24,6 +20,7 @@ namespace Headstart.Tests
             {
                 source = source.GetType().GetProperty(prop).GetValue(source, null);
             }
+
             return source;
         }
 
@@ -40,16 +37,6 @@ namespace Headstart.Tests
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
-        public static VerifiedUserContext MockUserContext()
-        {
-
-            var cid = new ClaimsIdentity("OrderCloudIntegrations");
-            cid.AddClaim(new Claim("accesstoken", MockOrderCloudToken()));
-            var principal = new ClaimsPrincipal(cid);
-            var context = new VerifiedUserContext(principal);
-            return context;
         }
     }
 }

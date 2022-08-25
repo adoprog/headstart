@@ -42,7 +42,11 @@
         <!-- TODO: Uncomment when grid bugs are fixed -->
         <div
           class="btn-group float-right"
-          *ngIf="specs?.length > 0 && hasNoOpenTextSpecs()"
+          *ngIf="
+            specs?.length > 0 &&
+            hasNoOpenTextSpecs() &&
+            _product?.xp?.ProductType !== 'Quote'
+          "
         >
           <button
             class="btn btn-sm btn-outline-secondary"
@@ -65,8 +69,24 @@
       </div>
       <ng-container *ngIf="!showGrid">
         <h4 class="font-weight-bold">
-          {{ unitPrice | currency: userCurrency }}
+          <app-product-price-display
+            class="card-text mb-0"
+            *ngIf="
+              _product?.xp?.ProductType !== 'Quote' &&
+              _product?.PriceSchedule?.PriceBreaks?.length
+            "
+            [priceSchedule]="_product.PriceSchedule"
+            [quantity]="quantity"
+            [specs]="specs"
+            [specForm]="specForm"
+          ></app-product-price-display>
         </h4>
+        <span
+          *ngIf="_product?.xp?.ProductType === 'Quote'"
+          class="small badge badge-pill badge-warning"
+        >
+          Quote Product</span
+        >
         <!-- TODO: Plug in unit of measure when data is in OC. -->
         <p class="text-muted">{{ _product | UofM }}</p>
         <span class="badge badge-pill badge-warning" *ngIf="percentSavings > 0">
@@ -74,9 +94,7 @@
         </span>
       </ng-container>
       <!--DISPLAY SHORT SPEC FORM -->
-      <ng-container
-        *ngIf="specs?.length < 4 && !showGrid && !_product.xp.ArtworkRequired"
-      >
+      <ng-container *ngIf="specs?.length < 4 && !showGrid">
         <ocm-spec-form
           *ngIf="isOrderable && specs?.length > 0"
           [superProduct]="_superProduct"
@@ -93,15 +111,58 @@
             make another selection.</strong
           >
         </ng-container>
-        <div class="d-flex flex-column mb-3" *ngIf="isOrderable">
+        <ng-container *ngIf="isQuoteAnonUser">
+          <strong class="text-danger" translate
+            >PRODUCTS.DETAILS.LOGIN_FOR_QUOTE</strong
+          >
+        </ng-container>
+        <div
+          class="d-flex flex-column mb-3"
+          *ngIf="isOrderable && !isQuoteAnonUser"
+        >
           <small
             class="text-uppercase font-weight-bolder text-muted mb-2"
             translate
             >PRODUCTS.DETAILS.QUANTITY</small
           >
-          <div class="d-flex flex-row">
+          <div *ngIf="isBundle" class="d-flex flex-row">
+            <div class="form-group mb-0 mr-3">
+              <label for="quantity" class="sr-only" translate
+                >PRODUCTS.QTY_INPUT.QTY</label
+              >
+              <input
+                id="quantity"
+                type="number"
+                class="form-control text-center input-width"
+                placeholder="0"
+                value="1"
+                (input)="
+                  qtyChange({
+                    qty: $event?.target?.value,
+                    valid: true
+                  })
+                "
+                aria-label="Quantity Input
+              Selector"
+                aria-describedby="quantity"
+              />
+            </div>
+            <button
+              class="btn btn-block btn-primary mb-3"
+              type="submit"
+              [disabled]="isAddingToCart"
+              (click)="addToCart()"
+            >
+              <div>
+                <span translate>PRODUCTS.DETAILS.ADD_TO_CART</span>
+                &nbsp;&nbsp;|&nbsp;&nbsp;
+                {{ price | currency: userCurrency }}
+              </div>
+            </button>
+          </div>
+          <div *ngIf="!isBundle" class="d-flex flex-row">
             <ocm-quantity-input
-              class="d-inline-block mb-3 mr-3"
+              class="d-inline-block mb-3 mr-3 flex-shrink-0"
               (qtyChange)="qtyChange($event.detail)"
               [product]="_product"
               [priceSchedule]="_product.PriceSchedule"
@@ -112,16 +173,6 @@
             >
             </ocm-quantity-input>
             <button
-              *ngIf="isQuoteProduct()"
-              class="btn btn-block btn-primary mb-3"
-              [disabled]="(specForm && !specForm?.valid) || !qtyValid"
-              (click)="openQuoteForm()"
-              translate
-            >
-              PRODUCTS.DETAILS.REQ_QUOTE
-            </button>
-            <button
-              *ngIf="!isQuoteProduct()"
               class="btn btn-block btn-primary mb-3"
               type="submit"
               [disabled]="
@@ -132,9 +183,14 @@
               "
               (click)="addToCart()"
             >
-              <span translate>PRODUCTS.DETAILS.ADD_TO_CART</span>
-              &nbsp;&nbsp;|&nbsp;&nbsp;
-              {{ price | currency: userCurrency }}
+              <div *ngIf="_product?.xp?.ProductType !== 'Quote'">
+                <span translate>PRODUCTS.DETAILS.ADD_TO_CART</span>
+                &nbsp;&nbsp;|&nbsp;&nbsp;
+                {{ price | currency: userCurrency }}
+              </div>
+              <span *ngIf="_product?.xp?.ProductType === 'Quote'">
+                Request Quote
+              </span>
             </button>
           </div>
         </div>
@@ -142,13 +198,37 @@
           PRODUCTS.DETAILS.VIEW_ONLY
         </div>
       </ng-container>
-      <ocm-modal [state]="quoteFormModal" [modalTitle]="'Request Quote'">
-        <ocm-quote-request-form
-          (formSubmitted)="submitQuoteOrder($event.detail.user)"
-          [CurrentUser]="currentUser"
-          (formDismissed)="dismissQuoteForm()"
-        ></ocm-quote-request-form>
-      </ocm-modal>
+      <ng-container *ngIf="isBundle">
+        <h5>Included in Bundle: </h5>
+        <div class="container">
+          <div class="row">
+            <div
+              *ngFor="let bundledProduct of _bundledProducts"
+              class="col-md-6"
+            >
+              <h6>
+                <app-product-price-display
+                  class="card-text mb-0"
+                  *ngIf="bundledProduct?.PriceSchedule?.PriceBreaks?.length"
+                  [priceSchedule]="bundledProduct.PriceSchedule"
+                  [quantity]="1"
+                  [specs]="[]"
+                  [specForm]="null"
+                ></app-product-price-display>
+                <span class="text-muted">{{ bundledProduct | UofM }}</span>
+              </h6>
+              <h6 class="h6 my-0">
+                {{ bundledProduct.Name }}
+              </h6>
+              <img
+                [src]="bundledProduct.xp.Images[0].Url"
+                class="img-thumbnail w-100 rounded mx-auto d-block"
+                alt="Product Image"
+              />
+            </div>
+          </div>
+        </div>
+      </ng-container>
       <ocm-modal
         [state]="contactSupplierFormModal"
         [modalTitle]="'Product Inquiry'"
@@ -310,7 +390,7 @@
         <div *ngIf="!isOrderable" class="alert alert-info" translate>
           PRODUCTS.DETAILS.VIEW_ONLY
         </div>
-        <div class="d-flex flex-column" *ngIf="isOrderable">
+        <div class="d-flex flex-column" *ngIf="isOrderable && !isQuoteAnonUser">
           <span translate>PRODUCTS.DETAILS.QUANTITY</span>:
           <ocm-quantity-input
             class="d-inline-block mb-3 product-qty-input"
@@ -366,11 +446,10 @@
       </ocm-modal>
     </div>
   </div>
-  <ng-container *ngIf="relatedProducts$ | async; let relatedProducts">
+  <ng-container *ngIf="selectedRelatedProducts?.length">
     <ocm-product-carousel
-      *ngIf="relatedProducts?.length > 0"
-      displayTitle="Related Products"
-      [products]="relatedProducts"
+      [displayTitle]="'PRODUCTS.CAROUSEL.RELATED_PRODUCTS' | translate"
+      [products]="selectedRelatedProducts"
     >
     </ocm-product-carousel>
   </ng-container>

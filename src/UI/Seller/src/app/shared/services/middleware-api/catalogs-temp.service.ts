@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http'
 import { Inject, Injectable } from '@angular/core'
 import { applicationConfiguration } from '@app-seller/config/app.config'
 import { AppConfig } from '@app-seller/models/environment.types'
-import { OcTokenService, CatalogAssignment } from '@ordercloud/angular-sdk'
+import { Tokens, CatalogAssignment } from 'ordercloud-javascript-sdk'
 import {
   HSCatalog,
   ListPage,
@@ -17,14 +17,13 @@ import {
 })
 export class CatalogsTempService {
   constructor(
-    private ocTokenService: OcTokenService,
     private http: HttpClient,
     @Inject(applicationConfiguration) private appConfig: AppConfig
   ) {}
 
   private buildHeaders(): HttpHeaders {
     return new HttpHeaders({
-      Authorization: `Bearer ${this.ocTokenService.GetAccess()}`,
+      Authorization: `Bearer ${Tokens.GetAccessToken()}`,
     })
   }
 
@@ -42,10 +41,7 @@ export class CatalogsTempService {
       .toPromise()
   }
 
-  async create(
-    buyerID: string,
-    catalog: HSCatalog
-  ): Promise<HSCatalog> {
+  async create(buyerID: string, catalog: HSCatalog): Promise<HSCatalog> {
     const url = `${this.appConfig.middlewareUrl}/buyers/${buyerID}/catalogs`
     return await this.http
       .post<HSCatalog>(url, catalog, { headers: this.buildHeaders() })
@@ -148,7 +144,7 @@ export class CatalogsTempService {
   ): Promise<HSPriceSchedule> {
     const url = `${this.appConfig.middlewareUrl}/products/${productID}/pricingoverride/buyer/${buyerID}`
     return await this.http
-      .get(url, { headers: this.buildHeaders() })
+      .get<HSPriceSchedule>(url, { headers: this.buildHeaders() })
       .toPromise()
   }
 
@@ -159,7 +155,9 @@ export class CatalogsTempService {
   ): Promise<HSPriceSchedule> {
     const url = `${this.appConfig.middlewareUrl}/products/${productID}/pricingoverride/buyer/${buyerID}`
     return await this.http
-      .post(url, priceSchedule, { headers: this.buildHeaders() })
+      .post<HSPriceSchedule>(url, priceSchedule, {
+        headers: this.buildHeaders(),
+      })
       .toPromise()
   }
 
@@ -170,7 +168,9 @@ export class CatalogsTempService {
   ): Promise<HSPriceSchedule> {
     const url = `${this.appConfig.middlewareUrl}/products/${productID}/pricingoverride/buyer/${buyerID}`
     return await this.http
-      .put(url, priceSchedule, { headers: this.buildHeaders() })
+      .put<HSPriceSchedule>(url, priceSchedule, {
+        headers: this.buildHeaders(),
+      })
       .toPromise()
   }
 

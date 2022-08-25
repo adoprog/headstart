@@ -50,14 +50,28 @@ export interface EnvironmentConfig {
   incrementorPrefix: string
   baseUrl: string
   middlewareUrl: string
-  cmsUrl?: string
   creditCardIframeUrl: string
-  sellerID: string
-  sellerName?: string
+  marketplaceID: string
+  marketplaceName?: string
   translateBlobUrl: string
+  supportedLanguages: string[]
+  defaultLanguage: string
   orderCloudApiUrl: string
   theme?: Theme
   appInsightsInstrumentationKey?: string
+  anonymousShoppingEnabled?: boolean
+  acceptedPaymentMethods?: string[]
+  storefrontName?: string
+  useSitecoreSend?: boolean
+  sitecoreSendWebsiteID?: string
+  useSitecoreCDP?: boolean
+  sitecoreCDPTargetEndpoint: string
+  sitecoreCDPApiClient: string
+  sitecoreCDPCookieDomain: string
+  sitecoreCDPJavascriptLibraryVersion: string
+  sitecoreCDPWebFlowTarget: string
+  sitecoreCDPPointOfSale: string
+  sellerQuoteContactEmail: string
 }
 
 export class AppConfig {
@@ -97,24 +111,28 @@ export class AppConfig {
    * link to where the translation files for the application are hosted
    */
   translateBlobUrl: string
-  orderCloudApiUrl: string
+  supportedLanguages: string[]
+  defaultLanguage: string
 
-  /**
-  * Optional base url to provide for OrderCloud CMS management. Note: this is a deprecated feature
-  */
-  cmsUrl: string
+  orderCloudApiUrl: string
   middlewareUrl: string
   creditCardIframeUrl: string
 
   /**
-   *  The ID of the seller organization.
+   *  The ID of the marketplace.
    */
-  sellerID: string
+  marketplaceID: string
 
   /**
-   * Name to use when displaying seller organization (i.e. seller owned products)
+   * Name to use when displaying marketplace (i.e. MPO owned products)
    */
-  sellerName: string
+  marketplaceName: string
+
+  /**
+   * Email for sending quote requests to seller (i.e. MPO owned products)
+   */
+  sellerQuoteContactEmail: string
+
   /**
    * An array of security roles that will be requested upon login.
    * These roles allow access to specific endpoints in the OrderCloud.io API.
@@ -128,4 +146,50 @@ export class AppConfig {
    * Microsoft Azure Application Insights instrumentation key
    */
   appInsightsInstrumentationKey: string
+
+  /**
+   * Payment methods that are accepted for the buyer/storefront
+   */
+  acceptedPaymentMethods?: string[]
+
+  /**
+   * Name of the storefront (API Client) being implemented in this app. This is used in automatic deployments
+   */
+  storefrontName?: string
+  /**
+   *  See https://www.sitecore.com/products/send
+   */
+  useSitecoreSend?: boolean
+  /**
+   *  Get a website ID - https://doc.sitecore.com/send/en/users/sitecore-send/enable-website-tracking.html
+   */
+  sitecoreSendWebsiteID?: string
+  /**
+   * See https://www.sitecore.com/products/customer-data-platform
+   */
+  useSitecoreCDP: boolean
+  /**
+   * See https://doc.sitecore.com/cdp/en/developers/sitecore-customer-data-platform--data-model-2-1/javascript-tagging-examples-for-web-pages.html
+   */
+  sitecoreCDPTargetEndpoint: string
+  /**
+   * See https://doc.sitecore.com/cdp/en/developers/sitecore-customer-data-platform--data-model-2-1/javascript-tagging-examples-for-web-pages.html
+   */
+  sitecoreCDPApiClient: string
+  /**
+   * See https://doc.sitecore.com/cdp/en/developers/sitecore-customer-data-platform--data-model-2-1/javascript-tagging-examples-for-web-pages.html
+   */
+  sitecoreCDPCookieDomain: string
+  /**
+   * See https://doc.sitecore.com/cdp/en/developers/sitecore-customer-data-platform--data-model-2-1/javascript-tagging-examples-for-web-pages.html
+   */
+  sitecoreCDPWebFlowTarget: string
+  /**
+   * See https://doc.sitecore.com/cdp/en/developers/sitecore-customer-data-platform--data-model-2-1/javascript-tagging-examples-for-web-pages.html
+   */
+  sitecoreCDPJavascriptLibraryVersion: string
+  /**
+   * See https://doc.sitecore.com/cdp/en/developers/sitecore-customer-data-platform--data-model-2-1/javascript-tagging-examples-for-web-pages.html
+   */
+  sitecoreCDPPointOfSale: string
 }

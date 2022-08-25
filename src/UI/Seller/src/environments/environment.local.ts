@@ -1,8 +1,8 @@
 // ===== MAKE CHANGES TO CONFIGURATION BETWEEN THESE LINES ONLY =======
 // ====================================================================
 const brand = Brand.DEFAULT_ADMIN
-const sebEnvironment = Environment.TEST
-const useLocalMiddleware = false
+const appEnvironment = Environment.TEST
+const useLocalMiddleware = true
 const localMiddlewareURL = 'https://localhost:5001'
 // ====================================================================
 // ======= UNLESS YOU ARE DOING SOMETHING WEIRD =======================
@@ -24,13 +24,13 @@ const apps = {
 }
 
 // for easier debugging in development mode, ignores zone related error stack frames such as `zone.run`, `zoneDelegate.invokeTask`.
-import 'zone.js/dist/zone-error'
+import 'zone.js/plugins/zone-error'
 import {
   Brand,
   Environment,
   EnvironmentConfig,
 } from '@app-seller/models/environment.types'
-const target: EnvironmentConfig = apps[sebEnvironment][brand]
+const target: EnvironmentConfig = apps[appEnvironment][brand]
 target.hostedApp = false
 if (useLocalMiddleware) {
   target.middlewareUrl = localMiddlewareURL

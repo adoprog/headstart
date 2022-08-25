@@ -1,15 +1,11 @@
-﻿using ordercloud.integrations.library;
-using OrderCloud.SDK;
+﻿using OrderCloud.SDK;
 
-namespace Headstart.Models
+namespace Headstart.Common.Models
 {
-    [SwaggerModel]
     public class HSPriceSchedule : PriceSchedule<PriceScheduleXp>, IHSObject
     {
-        
     }
 
-    [SwaggerModel]
     public class PriceScheduleXp
     {
     }

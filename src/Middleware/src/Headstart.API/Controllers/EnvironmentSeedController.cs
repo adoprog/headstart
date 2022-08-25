@@ -1,39 +1,46 @@
 ﻿using System.Threading.Tasks;
+using Headstart.Common.Settings;
 using Microsoft.AspNetCore.Mvc;
-using Headstart.Models.Misc;
-using Headstart.API.Commands;
 using OrderCloud.Catalyst;
+using OrderCloud.Integrations.EnvironmentSeed.Commands;
+using OrderCloud.Integrations.EnvironmentSeed.Models;
 
-namespace Headstart.Common.Controllers
+namespace Headstart.API.Controllers
 {
-    public class EnvironmentSeedController : BaseController
+    public class EnvironmentSeedController : CatalystController
     {
-        private readonly IEnvironmentSeedCommand _command;
-        private readonly AppSettings _settings;
+        private readonly IEnvironmentSeedCommand command;
+        private readonly AppSettings settings;
 
         public EnvironmentSeedController(
             IEnvironmentSeedCommand command,
-            AppSettings settings
-        )
+            AppSettings settings)
         {
-            _command = command;
-            _settings = settings;
+            this.command = command;
+            this.settings = settings;
         }
 
+        /// <summary>
+        /// Seeds a brand new organization.
+        /// </summary>
+        /// <remarks>
+        /// Check out the readme for more info https://github.com/ordercloud-api/headstart#seeding-ordercloud-data.
+        /// </remarks>
         [HttpPost, Route("seed")]
-        public async Task<EnvironmentSeedResponse> Seed([FromBody] EnvironmentSeed seed)
+        public async Task<EnvironmentSeedResponse> Seed([FromBody] EnvironmentSeedRequest seed)
         {
-            return await _command.Seed(seed);
+            return await command.Seed(seed);
         }
 
-		[HttpPost, Route("post-staging-restore"), OrderCloudWebhookAuth]
-		public async Task PostStagingRestore()
-		{
-            if(_settings.EnvironmentSettings.Environment == AppEnvironment.Production)
+        [HttpPost, Route("post-staging-restore"), OrderCloudWebhookAuth]
+        public async Task PostStagingRestore()
+        {
+            if (settings.EnvironmentSettings.Environment == AppEnvironment.Production)
             {
                 return;
             }
-			await _command.PostStagingRestore();
-		}
-	}
+
+            await command.PostStagingRestore();
+        }
+    }
 }

@@ -7,7 +7,6 @@ export * from '@app-seller/shared/guards/has-token/has-token.guard'
 // validators
 
 // models
-export * from '@app-seller/models/buyer.types'
 export * from '@app-seller/models/carousel.types'
 export * from '@app-seller/models/category.types'
 export * from '@app-seller/models/currency-geography.types'
@@ -27,4 +26,5 @@ export * from '@app-seller/shared/models/base-browse.class'
 export * from '@app-seller/shared/services/form-error/form-error.service'
 export * from '@app-seller/shared/services/app-state/app-state.service'
 export * from '@app-seller/shared/services/geography/geography.service'
+export * from '@app-seller/shared/services/language-selector/language-selector.service'
 export * from '@app-seller/shared/services/regex/regex.service'

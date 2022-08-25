@@ -20,18 +20,15 @@ import { ResourceUpdate } from '@app-seller/models/shared.types'
 import { ListArgs } from '@ordercloud/headstart-sdk'
 
 export abstract class ResourceCrudService<ResourceType> {
-  public resourceSubject: BehaviorSubject<
-    ListPage<ResourceType>
-  > = new BehaviorSubject<ListPage<ResourceType>>({
-    Meta: {},
-    Items: [],
-  })
-  public resourceRequestStatus: BehaviorSubject<RequestStatus> = new BehaviorSubject<RequestStatus>(
-    GETTING_NEW_ITEMS
-  )
-  public optionsSubject: BehaviorSubject<Options> = new BehaviorSubject<Options>(
-    {}
-  )
+  public resourceSubject: BehaviorSubject<ListPage<ResourceType>> =
+    new BehaviorSubject<ListPage<ResourceType>>({
+      Meta: {},
+      Items: [],
+    })
+  public resourceRequestStatus: BehaviorSubject<RequestStatus> =
+    new BehaviorSubject<RequestStatus>(GETTING_NEW_ITEMS)
+  public optionsSubject: BehaviorSubject<Options> =
+    new BehaviorSubject<Options>({})
 
   route = ''
   myRoute = ''
@@ -90,13 +87,8 @@ export abstract class ResourceCrudService<ResourceType> {
   async listResources(pageNumber = 1, searchText = ''): Promise<void> {
     const shouldList = await this.shouldListResources()
     if (shouldList) {
-      const {
-        sortBy,
-        search,
-        searchType,
-        filters,
-        OrderDirection,
-      } = this.optionsSubject.value
+      const { sortBy, search, searchType, filters, OrderDirection } =
+        this.optionsSubject.value
       let options: Options = {
         page: pageNumber,
         // allows a list call to pass in a search term that will not appear in the query params
@@ -104,7 +96,7 @@ export abstract class ResourceCrudService<ResourceType> {
         sortBy,
         pageSize: this.itemsPerPage,
         filters,
-        searchType
+        searchType,
       }
       options = this.addIntrinsicListArgs(options)
       const resourceResponse = await this.listWithStatusIndicator(
@@ -355,7 +347,10 @@ export abstract class ResourceCrudService<ResourceType> {
   }
 
   searchBy(searchTerm: string): void {
-    this.patchFilterState({ search: searchTerm || undefined, searchType: searchTerm ? 'ExactPhrasePrefix' : undefined})
+    this.patchFilterState({
+      search: searchTerm || undefined,
+      searchType: searchTerm ? 'ExactPhrasePrefix' : undefined,
+    })
   }
 
   addFilters(newFilters: ListArgs): void {
@@ -434,7 +429,13 @@ export abstract class ResourceCrudService<ResourceType> {
   // Handle URL updates
   private readFromUrlQueryParams(params: Params): void {
     const { sortBy, search, searchType, OrderDirection, ...filters } = params
-    this.optionsSubject.next({ sortBy, search, searchType, filters, OrderDirection })
+    this.optionsSubject.next({
+      sortBy,
+      search,
+      searchType,
+      filters,
+      OrderDirection,
+    })
   }
 
   private async listWithStatusIndicator(
@@ -446,19 +447,21 @@ export abstract class ResourceCrudService<ResourceType> {
       this.resourceRequestStatus.next(this.getFetchStatus(options))
       const args = await this.createListArgs([options], orderDirection)
       const resourceResponse = await this.list(args)
-      const successStatus = this.getSucessStatus(options, resourceResponse);
-      if(!isRetry && this.primaryResourceLevel === 'products' && successStatus === 'SUCCESSFUL_NO_ITEMS_WITH_FILTERS') {
+      const successStatus = this.getSucessStatus(options, resourceResponse)
+      if (
+        !isRetry &&
+        this.primaryResourceLevel === 'products' &&
+        successStatus === 'SUCCESSFUL_NO_ITEMS_WITH_FILTERS'
+      ) {
         isRetry = true
-        const retryOptions: Options = {...options, searchType: 'AnyTerm'}
-        let retryResourceResponse = await this.list([retryOptions])
+        const retryOptions: Options = { ...options, searchType: 'AnyTerm' }
+        const retryResourceResponse = await this.list([retryOptions])
         this.resourceRequestStatus.next(
           this.getSucessStatus(retryOptions, retryResourceResponse)
         )
         return retryResourceResponse
       }
-      this.resourceRequestStatus.next(
-        successStatus
-      )
+      this.resourceRequestStatus.next(successStatus)
       return resourceResponse
     } catch (error) {
       this.resourceRequestStatus.next(ERROR)
@@ -535,10 +538,10 @@ export abstract class ResourceCrudService<ResourceType> {
     isCreatingNew: boolean,
     isError?: boolean
   ): string {
-    if (isError) return 'Re-submit'
-    if (dataIsSaving) return 'Saving...'
-    if (isCreatingNew) return 'Create'
-    if (!isCreatingNew) return 'Save Changes'
+    if (isError) return 'ADMIN.PRODUCT_EDIT.RESUBMIT'
+    if (dataIsSaving) return 'ADMIN.PRODUCT_EDIT.SAVING'
+    if (isCreatingNew) return 'ADMIN.COMMON.CREATE'
+    if (!isCreatingNew) return 'ADMIN.PRODUCT_EDIT.SAVE_CHANGES'
   }
 
   getParentIDParamName(): string {

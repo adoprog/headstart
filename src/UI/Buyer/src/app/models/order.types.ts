@@ -2,10 +2,7 @@ import { HSLineItem } from '@ordercloud/headstart-sdk'
 import { LineItem, Sortable } from 'ordercloud-javascript-sdk'
 
 export interface OrderSummaryMeta {
-  StandardLineItems: HSLineItem[]
-  POLineItems: HSLineItem[]
-  StandardLineItemCount: number
-  POLineItemCount: number
+  LineItemCount: number
 
   ShouldHideShippingAndText: boolean
   ShippingAndTaxOverrideText: string
@@ -17,9 +14,6 @@ export interface OrderSummaryMeta {
   CreditCardTotal: number
   DiscountTotal: number
 
-  POSubtotal: number
-  POShippingCost: number
-  POTotal: number
   OrderTotal: number
 }
 
@@ -36,6 +30,7 @@ export enum OrderAddressType {
 
 export enum HeadstartOrderStatus {
   AllSubmitted = '!Unsubmitted',
+  AllQuotes = 'NeedsSellerReview',
   AwaitingApproval = 'AwaitingApproval',
   ChangesRequested = 'ChangesRequested',
   Open = 'Open',
@@ -60,10 +55,22 @@ export interface OrderFilters {
   location?: string
 }
 
+export enum RMAStatus {
+  Requested = 'Requested',
+  Denied = 'Denied',
+  Processing = 'Processing',
+  Approved = 'Approved',
+  Complete = 'Complete',
+  Canceled = 'Canceled',
+  PartialQtyApproved = 'PartialQtyApproved',
+  PartialQtyComplete = 'PartialQtyComplete',
+}
+
 export enum OrderViewContext {
   MyOrders = 'MyOrders',
   Approve = 'Approve',
   Location = 'Location',
+  Quote = 'Quote',
 }
 
 export interface OrderReorderResponse {

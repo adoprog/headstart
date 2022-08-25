@@ -12,12 +12,15 @@ import {
   User,
   UserGroup,
   UserGroupAssignment,
-  OcTokenService,
+  Tokens,
   ListPage,
-} from '@ordercloud/angular-sdk'
+} from 'ordercloud-javascript-sdk'
 import { faExclamationCircle } from '@fortawesome/free-solid-svg-icons'
 import { REDIRECT_TO_FIRST_PARENT } from '@app-seller/layout/header/header.config'
-import { GetDisplayText } from './user-group-assignments.constants'
+import {
+  GetDisplayText,
+  UserGroupDisplayText,
+} from './user-group-assignments.constants'
 import { applicationConfiguration } from '@app-seller/config/app.config'
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http'
 import {
@@ -58,7 +61,7 @@ export class UserGroupAssignments implements OnInit, OnChanges {
   requestedUserConfirmation = false
   faExclamationCircle = faExclamationCircle
   options = { filters: { 'xp.Type': '' } }
-  displayText = ''
+  displayText: UserGroupDisplayText = {} as UserGroupDisplayText
   searchTermInput: string
   searching: boolean
   viewAssignedUserGroups = false
@@ -67,14 +70,13 @@ export class UserGroupAssignments implements OnInit, OnChanges {
 
   constructor(
     private http: HttpClient,
-    private ocTokenService: OcTokenService,
     private router: Router,
     @Inject(applicationConfiguration) private appConfig: AppConfig
   ) {}
 
   ngOnInit() {
-    var url = this.router?.routerState?.snapshot?.url
-    if(url && url.split('/').length) {
+    const url = this.router?.routerState?.snapshot?.url
+    if (url && url.split('/').length) {
       this.buyerID = url.split('/')[2]
     }
   }
@@ -165,9 +167,10 @@ export class UserGroupAssignments implements OnInit, OnChanges {
 
   toggleUserUserGroupAssignment(userGroup: UserGroup): void {
     if (this.isAssigned(userGroup)) {
-      this._userUserGroupAssignmentsEditable = this._userUserGroupAssignmentsEditable.filter(
-        (groupAssignment) => groupAssignment.UserGroupID !== userGroup.ID
-      )
+      this._userUserGroupAssignmentsEditable =
+        this._userUserGroupAssignmentsEditable.filter(
+          (groupAssignment) => groupAssignment.UserGroupID !== userGroup.ID
+        )
     } else {
       const newUserUserGroupAssignment = {
         UserID: this.userID,
@@ -183,9 +186,10 @@ export class UserGroupAssignments implements OnInit, OnChanges {
 
   addUserUserGroupAssignment(userGroup: UserGroup): void {
     if (this.isAssigned(userGroup)) {
-      this._userUserGroupAssignmentsEditable = this._userUserGroupAssignmentsEditable.filter(
-        (groupAssignment) => groupAssignment.UserGroupID !== userGroup.ID
-      )
+      this._userUserGroupAssignmentsEditable =
+        this._userUserGroupAssignmentsEditable.filter(
+          (groupAssignment) => groupAssignment.UserGroupID !== userGroup.ID
+        )
     } else {
       const newUserUserGroupAssignment = {
         UserID: 'PENDING',
@@ -230,7 +234,8 @@ export class UserGroupAssignments implements OnInit, OnChanges {
   }
 
   discardUserUserGroupAssignmentChanges(): void {
-    this._userUserGroupAssignmentsEditable = this._userUserGroupAssignmentsStatic
+    this._userUserGroupAssignmentsEditable =
+      this._userUserGroupAssignmentsStatic
     this.checkForUserUserGroupAssignmentChanges()
   }
 
@@ -250,11 +255,12 @@ export class UserGroupAssignments implements OnInit, OnChanges {
     buyerID: string,
     userID: string
   ): Promise<ListPage<HSLocationUserGroup>> {
-    const userGroups = await HeadStartSDK.BuyerLocations.ListUserGroupsByCountry(
-      buyerID,
-      userID,
-      this.args
-    )
+    const userGroups =
+      await HeadStartSDK.BuyerLocations.ListUserGroupsByCountry(
+        buyerID,
+        userID,
+        this.args
+      )
     userGroups.Items.sort((a, b) =>
       a.Name > b.Name ? 1 : b.Name > a.Name ? -1 : 0
     )
@@ -264,7 +270,7 @@ export class UserGroupAssignments implements OnInit, OnChanges {
   private buildHeaders(): HttpHeaders {
     return new HttpHeaders({
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${this.ocTokenService.GetAccess()}`,
+      Authorization: `Bearer ${Tokens.GetAccessToken()}`,
     })
   }
 

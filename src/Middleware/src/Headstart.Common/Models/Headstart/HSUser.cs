@@ -1,20 +1,22 @@
-﻿using ordercloud.integrations.library;
+﻿using System.Collections.Generic;
 using OrderCloud.SDK;
-using System.Collections.Generic;
 
-namespace Headstart.Models
+namespace Headstart.Common.Models
 {
-    [SwaggerModel]
     public class HSUser : User<UserXp>, IHSObject
     {
     }
 
-    [SwaggerModel]
     public class UserXp
     {
-    public string Country { get; set; }
-    public string OrderEmails { get; set; }
-    public string RequestInfoEmails { get; set; }
-    public List<string> AddtlRcpts { get; set; }
+        public string Country { get; set; }
+
+        public string OrderEmails { get; set; }
+
+        public string RequestInfoEmails { get; set; }
+
+        public List<string> AddtlRcpts { get; set; }
+
+        public string Language { get; set; }
     }
 }

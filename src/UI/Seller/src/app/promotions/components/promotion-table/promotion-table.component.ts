@@ -1,5 +1,5 @@
 import { Component, ChangeDetectorRef, NgZone } from '@angular/core'
-import { Promotion } from '@ordercloud/angular-sdk'
+import { Promotion } from 'ordercloud-javascript-sdk'
 import { ResourceCrudComponent } from '@app-seller/shared/components/resource-crud/resource-crud.component'
 import { Router, ActivatedRoute } from '@angular/router'
 import { PromotionService } from '@app-seller/promotions/promotion.service'
@@ -18,5 +18,32 @@ export class PromotionTableComponent extends ResourceCrudComponent<Promotion> {
     ngZone: NgZone
   ) {
     super(changeDetectorRef, promotionService, router, activatedRoute, ngZone)
+  }
+
+  filterConfig = {
+    Filters: [
+      {
+        Display: 'ADMIN.FILTERS.APPLICATION',
+        Path: 'xp.Automatic',
+        Type: 'Dropdown',
+        Items: [
+          { Text: 'ADMIN.FILTER_OPTIONS.AUTOMATIC', Value: 'true' },
+          { Text: 'ADMIN.FILTER_OPTIONS.CODE', Value: 'false' },
+        ],
+      },
+      {
+        Display: 'ADMIN.FILTERS.APPLIES_TO',
+        Path: 'xp.AppliesTo',
+        Type: 'Dropdown',
+        Items: [
+          { Text: 'ADMIN.FILTER_OPTIONS.ENTIRE_ORDER', Value: 'EntireOrder' },
+          {
+            Text: 'ADMIN.FILTER_OPTIONS.SPECIFIC_SUPPLIER',
+            Value: 'SpecificSupplier',
+          },
+          { Text: 'ADMIN.FILTER_OPTIONS.SPECIFIC_SKUS', Value: 'SpecificSKUs' },
+        ],
+      },
+    ],
   }
 }

@@ -28,7 +28,10 @@ import {
 import { AxiosError } from 'axios'
 import { CheckoutService } from 'src/app/services/order/checkout.service'
 import { ShopperContextService } from 'src/app/services/shopper-context/shopper-context.service'
-import { CheckoutSection } from 'src/app/models/checkout.types'
+import {
+  AcceptedPaymentTypes,
+  CheckoutSection,
+} from 'src/app/models/checkout.types'
 import {
   HSBuyerCreditCard,
   SelectedCreditCard,
@@ -38,6 +41,8 @@ import { ModalState } from 'src/app/models/shared.types'
 import { ErrorDisplayData, MiddlewareError } from 'src/app/models/error.types'
 import { Router } from '@angular/router'
 import { TranslateService } from '@ngx-translate/core'
+import { SitecoreSendTrackingService } from 'src/app/services/sitecore-send/sitecore-send-tracking.service'
+import { SitecoreCDPTrackingService } from 'src/app/services/sitecore-cdp/sitecore-cdp-tracking.service'
 
 @Component({
   templateUrl: './checkout.component.html',
@@ -94,8 +99,10 @@ export class OCMCheckout implements OnInit {
     private spinner: NgxSpinnerService,
     private toastrService: ToastrService,
     private router: Router,
-    private translate: TranslateService
-  ) { }
+    private translate: TranslateService,
+    private send: SitecoreSendTrackingService,
+    private cdp: SitecoreCDPTrackingService,
+  ) {}
 
   async ngOnInit(): Promise<void> {
     this.context.order.onChange((order) => (this.order = order))
@@ -105,16 +112,17 @@ export class OCMCheckout implements OnInit {
     }
 
     this.lineItems = this.context.order.cart.get()
-    this.orderPromotions = this.context.order.promos.get().Items
+    this.orderPromotions = this.context.order.promos.get()?.Items
     this.isAnon = this.context.currentUser.isAnonymous()
     this.currentPanel = this.isAnon ? 'login' : 'shippingAddressLoading'
     this.initLoadingIndicator()
     this.updateOrderMeta()
     this.setValidation('login', !this.isAnon)
+    await this.context.order.promos.applyAutomaticPromos()
     this.isNewCard = false
     this.invalidLineItems = await this.context.order.cart.getInvalidLineItems()
     if (this.invalidLineItems?.length) {
-      // Navigate to cart to review invalid itemss
+      // Navigate to cart to review invalid items
       void this.router.navigate(['/cart'])
     } else {
       await this.reIDLineItems()
@@ -143,8 +151,10 @@ export class OCMCheckout implements OnInit {
     this.initLoadingIndicator('shippingSelectionLoading')
     await this.checkout.calculateOrder()
     this.cards = await this.context.currentUser.cards.List(this.isAnon)
-    await this.context.order.promos.applyAutomaticPromos()
     this.order = this.context.order.get()
+    if (this.orderPromotions?.length) {
+      await this.context.order.promos.refresh()
+    }
     if (this.order.IsSubmitted) {
       await this.handleOrderError(ErrorCodes.AlreadySubmitted)
     }
@@ -156,7 +166,9 @@ export class OCMCheckout implements OnInit {
     this.toSection('shippingAddress')
   }
 
-  buildCCPaymentFromNewCard(card: OrderCloudIntegrationsCreditCardToken): Payment {
+  buildCCPaymentFromNewCard(
+    card: OrderCloudIntegrationsCreditCardToken
+  ): Payment {
     return {
       DateCreated: new Date().toDateString(),
       Accepted: false,
@@ -202,9 +214,6 @@ export class OCMCheckout implements OnInit {
       payments.push(this.buildCCPaymentFromSavedCard(output.SavedCard))
       delete this.selectedCard.NewCard
     }
-    if (this.orderSummaryMeta.POLineItemCount) {
-      payments.push(this.buildPOPayment())
-    }
     try {
       await HeadStartSDK.Payments.SavePayments(this.order.ID, {
         Payments: payments,
@@ -220,7 +229,10 @@ export class OCMCheckout implements OnInit {
   async handleNewCard(output: SelectedCreditCard): Promise<HSPayment> {
     this.isNewCard = true
     if (this.isAnon) {
-      await this.context.order.checkout.setOneTimeAddress(output.NewCard.CCBillingAddress, 'billing')
+      await this.context.order.checkout.setOneTimeAddress(
+        output.NewCard.CCBillingAddress,
+        'billing'
+      )
       return this.buildCCPaymentFromNewCard(output.NewCard)
     } else {
       this.selectedCard.SavedCard = await this.context.currentUser.cards.Save(
@@ -244,26 +256,29 @@ export class OCMCheckout implements OnInit {
     // Check that line items in cart are all from active products (none were made inactive during checkout).
     this.invalidLineItems = await this.context.order.cart.getInvalidLineItems()
     if (this.invalidLineItems?.length) {
-      // Navigate to cart to review invalid itemss
+      // Navigate to cart to review invalid items
       await this.context.order.reset() // orderID might've been incremented
       this.isLoading = false
       void this.router.navigate(['/cart'])
     } else {
       this.initLoadingIndicator('submitLoading')
-      await this.checkout.checkForSellerOwnedProducts(this.lineItems.Items)
-      await this.checkout.addComment(comment)
       try {
-        const payment = this.orderSummaryMeta.StandardLineItemCount
-          ? this.getCCPaymentData()
-          : {}
+        const payment =
+          this.payments?.Items?.[0]?.Type === AcceptedPaymentTypes.CreditCard
+            ? this.getCCPaymentData()
+            : {}
         const order = await HeadStartSDK.Orders.Submit(
           'Outgoing',
           this.order.ID,
           payment
-        )
-        await this.checkout.appendPaymentMethodToOrderXp(order.ID, payment)
-        this.isLoading = false
+        );
+        this.send.purchase(this.context.order.getLineItems().Items);
+        this.cdp.orderPlaced(this.context.order.get(), this.context.order.getLineItems().Items);
+        //  Do all patching of order XP values in the OrderSubmit integration event
+        //  Patching order XP before order is submitted will clear out order worksheet data
+        await this.checkout.patch({ Comments: comment }, order.ID)
         await this.context.order.reset() // get new current order
+        this.isLoading = false
         this.toastrService.success('Order submitted successfully', 'Success')
         this.context.router.toMyOrderDetails(order.ID)
       } catch (e) {
@@ -353,6 +368,10 @@ export class OCMCheckout implements OnInit {
     }
   }
 
+  handleAddressDismissal(): void {
+    this.toSection('login')
+  }
+
   async handleCheckoutError(): Promise<void> {
     this.orderErrorModal = ModalState.Closed
     await this.refreshOrderUpdateMeta()
@@ -386,9 +405,9 @@ export class OCMCheckout implements OnInit {
       OrderID: this.order.ID,
       PaymentID: this.payments.Items[0].ID, // There's always only one at this point
       CreditCardID: this.selectedCard?.SavedCard?.ID,
-      CreditCardDetails: this.selectedCard.NewCard,
+      CreditCardDetails: this.selectedCard?.NewCard,
       Currency: this.order.xp.Currency,
-      CVV: this.selectedCard.CVV,
+      CVV: this.selectedCard?.CVV,
     }
   }
 
@@ -444,7 +463,6 @@ export class OCMCheckout implements OnInit {
       this.order,
       this.orderPromotions,
       this.lineItems.Items,
-      this.shipEstimates,
       panelID || this.currentPanel
     )
   }

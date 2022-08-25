@@ -1,47 +1,50 @@
-﻿using Headstart.Models;
+﻿using System.Threading.Tasks;
+using Headstart.Common.Commands;
+using Headstart.Common.Models;
 using Microsoft.AspNetCore.Mvc;
-using OrderCloud.SDK;
-using System.Threading.Tasks;
-using Headstart.Models.Attributes;
-using ordercloud.integrations.library;
-using Headstart.API.Commands;
 using OrderCloud.Catalyst;
+using OrderCloud.SDK;
 
 namespace Headstart.Common.Controllers
 {
-    [DocComments("\"Buyers\" represents Buyers for Headstart")]
-    [HSSection.Headstart(ListOrder = 1)]
+    /// <summary>
+    /// Buyers for Headstart.
+    /// </summary>
     [Route("buyer")]
-    public class BuyerController : BaseController
+    public class BuyerController : CatalystController
     {
-        
-        private readonly IHSBuyerCommand _command;
-        private readonly IOrderCloudClient _oc;
-        public BuyerController(IHSBuyerCommand command, IOrderCloudClient oc)
+        private readonly IBuyerCommand buyerCommand;
+
+        public BuyerController(IBuyerCommand buyerCommand)
         {
-            _command = command;
-            _oc = oc;
+            this.buyerCommand = buyerCommand;
         }
 
-        [DocName("POST Headstart Buyer")]
+        /// <summary>
+        /// POST Headstart Buyer.
+        /// </summary>
         [HttpPost, OrderCloudUserAuth(ApiRole.BuyerAdmin)]
         public async Task<SuperHSBuyer> Create([FromBody] SuperHSBuyer buyer)
         {
-            return await _command.Create(buyer);
+            return await buyerCommand.Create(buyer);
         }
 
-        [DocName("PUT Headstart Buyer")]
+        /// <summary>
+        /// PUT Headstart Buyer.
+        /// </summary>
         [HttpPut, Route("{buyerID}"), OrderCloudUserAuth(ApiRole.BuyerAdmin)]
         public async Task<SuperHSBuyer> Put([FromBody] SuperHSBuyer superBuyer, string buyerID)
         {
-            return await _command.Update(buyerID, superBuyer);
+            return await buyerCommand.Update(buyerID, superBuyer);
         }
 
-        [DocName("GET Headstart Buyer")]
+        /// <summary>
+        /// GET Headstart Buyer".
+        /// </summary>
         [HttpGet, Route("{buyerID}"), OrderCloudUserAuth(ApiRole.BuyerAdmin)]
         public async Task<SuperHSBuyer> Get(string buyerID)
         {
-            return await _command.Get(buyerID);
+            return await buyerCommand.Get(buyerID);
         }
     }
 }

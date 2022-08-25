@@ -1,7 +1,4 @@
-import { HSSupplier } from '../models/HSSupplier';
-import { HSSupplierOrderData } from '../models/HSSupplierOrderData';
 import { RequiredDeep } from '../models/RequiredDeep';
-import { ListArgs } from '../models/ListArgs'
 import httpClient from '../utils/HttpClient';
 import { DocumentAsset, FileData, ImageAsset } from '../models';
 
@@ -25,7 +22,7 @@ export default class Assets {
     }
 
     public async CreateDocument(assetData: FileData): Promise<RequiredDeep<DocumentAsset>> {
-        return await httpClient.post('/assets/image', this.mapFileToFormData(assetData), { params: {} })
+        return await httpClient.post('/assets/document', this.mapFileToFormData(assetData), { params: {} })
     }
 
     /**

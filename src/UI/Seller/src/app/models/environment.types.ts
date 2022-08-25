@@ -1,14 +1,15 @@
-import { ApiRole } from '@ordercloud/angular-sdk'
+import { ApiRole } from 'ordercloud-javascript-sdk'
 
 export interface EnvironmentConfig {
   hostedApp: boolean
-  sellerID: string
-  sellerName: string
+  marketplaceID: string
+  marketplaceName: string
   clientID: string
   middlewareUrl: string
-  cmsUrl?: string
   appname: string
   translateBlobUrl: string
+  supportedLanguages: string[]
+  defaultLanguage: string
   blobStorageUrl: string
   orderCloudApiUrl: string
 }
@@ -40,7 +41,7 @@ export interface AppConfig {
    * will be used for authentication. You can view client ids for apps
    * you own or are a contributor to on the [dashboard](https://developer.ordercloud.io/dashboard)
    */
-  sellerID: string
+  marketplaceID: string
   clientID: string
   /**
    * base path to middleware
@@ -49,12 +50,13 @@ export interface AppConfig {
   /**
   * Optional base url to provide for OrderCloud CMS management. Note: this is a deprecated feature
   */
-  cmsUrl?: string
   translateBlobUrl: string
+  supportedLanguages: string[]
+  defaultLanguage: string
   blobStorageUrl: string
 
-  // sellerName is being hard-coded until this is available to store in OrderCloud
-  sellerName: string
+  // marketplaceName is being hard-coded until this is available to store in OrderCloud
+  marketplaceName: string
 
   /**
    * An array of security roles that will be requested upon login.

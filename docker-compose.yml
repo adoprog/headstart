@@ -13,7 +13,7 @@ services:
       - "80:80"
       - "8079:8080"
     healthcheck:
-      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      test: [ "CMD", "traefik", "healthcheck", "--ping" ]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
@@ -30,7 +30,9 @@ services:
       args:
         BUILD_IMAGE: mcr.microsoft.com/dotnet/sdk:3.1-alpine
         BASE_IMAGE: mcr.microsoft.com/dotnet/aspnet:3.1-alpine
+        BUILD_CONFIGURATION: ${BUILD_CONFIGURATION}
     environment:
+      ASPNETCORE_ENVIRONMENT: ${BUILD_CONFIGURATION}
       ApplicationInsightsSettings_InstrumentationKey: "${ApplicationInsightsSettings_InstrumentationKey}"
 
       AvalaraSettings_AccountID: "${AvalaraSettings_AccountID}"
@@ -38,15 +40,6 @@ services:
       AvalaraSettings_CompanyID: "${AvalaraSettings_CompanyID}"
       AvalaraSettings_LicenseKey: "${AvalaraSettings_LicenseKey}"
       AvalaraSettings_BaseApiUrl: "${AvalaraSettings_BaseApiUrl}"
-
-      BlobSettings_ConnectionString: "${BlobSettings_ConnectionString}"
-      BlobSettings_HostUrl: "${BlobSettings_HostUrl}"
-      BlobSettings_Key: "${BlobSettings_Key}"
-      BlobSettings_ContainerNameQueue: "${BlobSettings_ContainerNameQueue}"
-      BlobSettings_ContainerNameCache: "${BlobSettings_ContainerNameCache}"
-      BlobSettings_ContainerNameExchangeRates: "${BlobSettings_ContainerNameExchangeRates}"
-      BlobSettings_ContainerNameTranslations: "${BlobSettings_ContainerNameTranslations}"
-      CMSSettings_BaseUrl: "${CMSSettings_BaseUrl}"
 
       CardConnectSettings_Authorization: "${CardConnectSettings_Authorization}"
       CardConnectSettings_AuthorizationCad: "${CardConnectSettings_AuthorizationCad}"
@@ -56,56 +49,84 @@ services:
       CardConnectSettings_UsdMerchantID: "${CardConnectSettings_UsdMerchantID}"
 
       CosmosSettings_DatabaseName: "${CosmosSettings_DatabaseName}"
-      CosmosSettings_EnableTcpConnectionEndpointRediscovery: "${CosmosSettings_EnableTcpConnectionEndpointRediscovery}"
       CosmosSettings_EndpointUri: "${CosmosSettings_EndpointUri}"
       CosmosSettings_PrimaryKey: "${CosmosSettings_PrimaryKey}"
       CosmosSettings_RequestTimeoutInSeconds: "${CosmosSettings_RequestTimeoutInSeconds}"
 
       EasyPostSettings_APIKey: "${EasyPostSettings_APIKey}"
+      EasyPostSettings_FedexAccountId: "${EasyPostSettings_FedexAccountId}"
       EasyPostSettings_FreeShippingTransitDays: "${EasyPostSettings_FreeShippingTransitDays}"
       EasyPostSettings_NoRatesFallbackCost: "${EasyPostSettings_NoRatesFallbackCost}"
       EasyPostSettings_NoRatesFallbackTransitDays: "${EasyPostSettings_NoRatesFallbackTransitDays}"
+      EasyPostSettings_USPSAccountId: "${EasyPostSettings_USPSAccountId}"
 
-      EnvironmentSettings_AppTimeoutInSeconds: "${EnvironmentSettings_AppTimeoutInSeconds}"
-      EnvironmentSettings_MiddlewareBaseUrl: "${API_HOST}"
       EnvironmentSettings_BuildNumber: "${EnvironmentSettings_BuildNumber}"
       EnvironmentSettings_Commit: "${EnvironmentSettings_Commit}"
       EnvironmentSettings_Environment: "${EnvironmentSettings_Environment}"
+      EnvironmentSettings_MiddlewareBaseUrl: "${API_HOST}"
+      EnvironmentSettings_AddressValidationProvider: "${EnvironmentSettings_AddressValidationProvider}"
+      EnvironmentSettings_CMSProvider: "${EnvironmentSettings_CMSProvider}"
+      EnvironmentSettings_CurrencyConversionProvider: "${EnvironmentSettings_CurrencyConversionProvider}"
+      EnvironmentSettings_EmailServiceProvider: "${EnvironmentSettings_EmailServiceProvider}"
+      EnvironmentSettings_OMSProvider: "${EnvironmentSettings_OMSProvider}"
+      EnvironmentSettings_PaymentProvider: "${EnvironmentSettings_PaymentProvider}"
+      EnvironmentSettings_ShippingProvider: "${EnvironmentSettings_ShippingProvider}"
+      EnvironmentSettings_TaxProvider: "${EnvironmentSettings_TaxProvider}"
 
       FlurlSettings_TimeoutInSeconds: "${FlurlSettings_TimeoutInSeconds}"
 
+      JobSettings_CaptureCreditCardsAfterDate: "${JobSettings_CaptureCreditCardsAfterDate}"
+      JobSettings_ShouldCaptureCreditCardPayments: "${JobSettings_ShouldCaptureCreditCardPayments}"
+      JobSettings_ShouldRunZoho: "${JobSettings_ShouldRunZoho}"
+
       OrderCloudSettings_ApiUrl: "${OrderCloudSettings_ApiUrl}"
+      OrderCloudSettings_ClientIDsWithAPIAccess: "${OrderCloudSettings_ClientIDsWithAPIAccess}"
+      OrderCloudSettings_IncrementorPrefix: "${OrderCloudSettings_IncrementorPrefix}"
+      OrderCloudSettings_MarketplaceID: "${OrderCloudSettings_MarketplaceID}"
+      OrderCloudSettings_MarketplaceName: "${OrderCloudSettings_MarketplaceName}"
       OrderCloudSettings_MiddlewareClientID: "${OrderCloudSettings_MiddlewareClientID}"
       OrderCloudSettings_MiddlewareClientSecret: "${OrderCloudSettings_MiddlewareClientSecret}"
-      OrderCloudSettings_IncrementorPrefix: "${OrderCloudSettings_IncrementorPrefix}"
       OrderCloudSettings_WebhookHashKey: "${OrderCloudSettings_WebhookHashKey}"
 
       SendGridSettings_ApiKey: "${SendGridSettings_ApiKey}"
-      SendgridSettings_FromEmail: "${SendgridSettings_FromEmail}"
-      SendgridSettings_CriticalSupportEmails: "${SendgridSettings_CriticalSupportEmails}"
-      SendgridSettings_SupportCaseEmail: "${SendgridSettings_SupportCaseEmail}"
       SendgridSettings_BillingEmail: "${SendgridSettings_BillingEmail}"
-      SendgridSettings_OrderSubmitTemplateID: "${SendgridSettings_OrderSubmitTemplateID}"
-      SendgridSettings_OrderApprovalTemplateID: "${SendgridSettings_OrderApprovalTemplateID}"
-      SendgridSettings_LineItemStatusChangeTemplateID: "${SendgridSettings_LineItemStatusChangeTemplateID}"
-      SendgridSettings_QuoteOrderSubmitTemplateID: "${SendgridSettings_QuoteOrderSubmitTemplateID}"
-      SendgridSettings_NewUserTemplateID: "${SendgridSettings_NewUserTemplateID}"
-      SendgridSettings_ProductInformationRequestTemplateID: "${SendgridSettings_ProductInformationRequestTemplateID}"
-      SendgridSettings_PasswordResetTemplateID: "${SendgridSettings_PasswordResetTemplateID}"
+      SendgridSettings_CriticalSupportEmails: "${SendgridSettings_CriticalSupportEmails}"
       SendgridSettings_CriticalSupportTemplateID: "${SendgridSettings_CriticalSupportTemplateID}"
+      SendgridSettings_FromEmail: "${SendgridSettings_FromEmail}"
+      SendgridSettings_LineItemStatusChangeTemplateID: "${SendgridSettings_LineItemStatusChangeTemplateID}"
+      SendgridSettings_NewUserTemplateID: "${SendgridSettings_NewUserTemplateID}"
+      SendgridSettings_OrderApprovalTemplateID: "${SendgridSettings_OrderApprovalTemplateID}"
+      SendgridSettings_OrderSubmitTemplateID: "${SendgridSettings_OrderSubmitTemplateID}"
+      SendgridSettings_PasswordResetTemplateID: "${SendgridSettings_PasswordResetTemplateID}"
+      SendgridSettings_ProductInformationRequestTemplateID: "${SendgridSettings_ProductInformationRequestTemplateID}"
+      SendgridSettings_QuoteOrderSubmitTemplateID: "${SendgridSettings_QuoteOrderSubmitTemplateID}"
+      SendgridSettings_SupportCaseEmail: "${SendgridSettings_SupportCaseEmail}"
+
+      ServiceBusSettings_ConnectionString: "${ServiceBusSettings_ConnectionString}"
+      ServiceBusSettings_ZohoQueueName: "${ServiceBusSettings_ZohoQueueName}"
 
       SmartyStreetSettings_AuthID: "${SmartyStreetSettings_AuthID}"
       SmartyStreetSettings_AuthToken: "${SmartyStreetSettings_AuthToken}"
-      SmartyStreetSettings_RefererHost: "${SmartyStreetSettings_RefererHost}"
-      SmartyStreetSettings_WebsiteKey: "${SmartyStreetSettings_WebsiteKey}"
 
-      UI_BaseAdminUrl: "${SELLER_HOST}"
+      StorageAccountSettings_ConnectionString: "${StorageAccountSettings_ConnectionString}"
+      StorageAccountSettings_HostUrl: "${StorageAccountSettings_HostUrl}"
+      StorageAccountSettings_Key: "${StorageAccountSettings_Key}"
+      StorageAccountSettings_ContainerNameQueue: "${StorageAccountSettings_ContainerNameQueue}"
+      StorageAccountSettings_ContainerNameCache: "${StorageAccountSettings_ContainerNameCache}"
+      StorageAccountSettings_BlobContainerNameExchangeRates: "${StorageAccountSettings_ContainerNameExchangeRates}"
+      StorageAccountSettings_ContainerNameTranslations: "${StorageAccountSettings_ContainerNameTranslations}"
+
+      UI_BaseAdminUrl: "http://${SELLER_HOST}"
 
       ZohoSettings_AccessToken: "${ZohoSettings_AccessToken}"
+      ZohoSettings_ApiUrl: "${ZohoSettings_ApiUrl}"
       ZohoSettings_ClientId: "${ZohoSettings_ClientId}"
       ZohoSettings_ClientSecret: "${ZohoSettings_ClientSecret}"
-      ZohoSettings_OrgID: "${ZohoSettings_OrgID}"
+      ZohoSettings_OrganizationID: "${ZohoSettings_OrganizationID}"
       ZohoSettings_PerformOrderSubmitTasks: "${ZohoSettings_PerformOrderSubmitTasks}"
+    depends_on:
+      cosmos:
+        condition: service_healthy
     networks:
       headstart:
         aliases:
@@ -118,12 +139,14 @@ services:
     image: ${REGISTRY}headstart-seller:${VERSION}-linux
     isolation: default
     environment:
-      SELLER_ID: ${SELLER_ID}
+      MARKETPLACE_ID: ${OrderCloudSettings_MarketplaceID}
       SELLER_CLIENT_ID: ${SELLER_CLIENT_ID}
       MIDDLEWARE_URL: http://${API_HOST}
       TRANSLATE_BLOB_URL: ${TRANSLATE_BLOB_URL}
       BLOB_STORAGE_URL: ${BLOB_STORAGE_URL}
       BUYER_CLIENT_ID: ${BUYER_CLIENT_ID}
+      SUPPORTED_LANGUAGES: ${SELLER_SUPPORTED_LANGUAGES}
+      DEFAULT_LANGUAGE: ${SELLER_DEFAULT_LANGUAGE}
     ports:
       - 43010:80
     build:
@@ -146,8 +169,13 @@ services:
     environment:
       BUYER_CLIENT_ID: ${BUYER_CLIENT_ID}
       MIDDLEWARE_URL: http://${API_HOST}
-      SELLER_ID: ${SELLER_ID}
+      BUYER_URL: http://${BUYER_HOST}
+      MARKETPLACE_ID: ${OrderCloudSettings_MarketplaceID}
+      MARKETPLACE_NAME: ${OrderCloudSettings_MarketplaceName}
       TRANSLATE_BLOB_URL: ${TRANSLATE_BLOB_URL}
+      SUPPORTED_LANGUAGES: ${BUYER_SUPPORTED_LANGUAGES}
+      DEFAULT_LANGUAGE: ${BUYER_DEFAULT_LANGUAGE}
+
     ports:
       - 43015:80
     build:
@@ -165,10 +193,9 @@ services:
           - "${BUYER_HOST}"
 
   storage:
-  # https://docs.microsoft.com/en-us/azure/storage/common/storage-use-azurite#install-and-run-the-azurite-docker-image
-    image: mcr.microsoft.com/azure-storage/azurite
+    image: mcr.microsoft.com/azure-storage/azurite:${AZUREITE_TAG}
     volumes:
-      - ./data/storage:/data
+      - ./docker/data/storage:/data
     environment:
       blobHost: 0.0.0.0
       queueHost: 0.0.0.0
@@ -176,6 +203,37 @@ services:
     ports:
       - 10000:10000
       - 10001:10001
+    networks:
+      headstart:
+
+
+  cosmos:
+    image: ${REGISTRY}headstart-cosmos:${VERSION}-linux
+    mem_limit: 3g
+    cpu_count: 2
+    build:
+      context: .
+      dockerfile: docker/build/cosmos/Dockerfile
+      args:
+        BASE_IMAGE: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:${COSMOS_TAG}
+    environment:
+      AZURE_COSMOS_EMULATOR_PARTITION_COUNT: 10
+      AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: "true"
+    ports:
+      - 8081:8081
+      - 10251:10251
+      - 10252:10252
+      - 10253:10253
+      - 10254:10254
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f -k https://localhost:8081/_explorer/emulator.pem || exit 1"
+        ]
+    networks:
+      headstart:
+
 
 networks:
   headstart:

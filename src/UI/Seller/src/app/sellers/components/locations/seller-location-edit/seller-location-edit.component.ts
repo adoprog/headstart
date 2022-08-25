@@ -6,14 +6,10 @@ import {
   OnChanges,
 } from '@angular/core'
 import { FormGroup, Validators, FormControl } from '@angular/forms'
-import { Address, ListPage } from '@ordercloud/angular-sdk'
+import { Address, ListPage } from 'ordercloud-javascript-sdk'
 import { ActivatedRoute } from '@angular/router'
 import { GeographyConfig } from '@app-seller/shared/models/supported-countries.constant'
-import {
-  ValidateCAZip,
-  ValidateUSZip,
-  ValidatePhone,
-} from '@app-seller/validators/validators'
+import { ValidateZip, ValidatePhone } from '@app-seller/validators/validators'
 import { takeWhile } from 'rxjs/operators'
 import { SellerAddressService } from '../seller-address.service'
 import {
@@ -99,7 +95,7 @@ export class SellerLocationEditComponent implements OnChanges {
       State: new FormControl(sellerLocation.State, Validators.required),
       Zip: new FormControl({ value: sellerLocation.Zip, disabled: true }, [
         Validators.required,
-        ValidateUSZip || ValidateCAZip,
+        ValidateZip(sellerLocation.Zip),
       ]),
       Country: new FormControl(sellerLocation.Country, Validators.required),
       Phone: new FormControl(sellerLocation.Phone, ValidatePhone),
@@ -124,11 +120,7 @@ export class SellerLocationEditComponent implements OnChanges {
         this.flag = this.getFlagForCountry(currency)
         this.countryHasBeenSelected = code !== ''
         if (code !== null) zipControl.enable()
-        if (code === 'CA') {
-          zipControl.setValidators(ValidateCAZip)
-        } else {
-          zipControl.setValidators(ValidateUSZip)
-        }
+        zipControl.setValidators(ValidateZip(code))
       })
   }
 
@@ -143,14 +135,18 @@ export class SellerLocationEditComponent implements OnChanges {
   }
 
   private async determineIfDeletable(locationID: string): Promise<void> {
-    const hasNoProducts = ((await HeadStartSDK.Suppliers.CanDeleteLocation(
+    const hasNoProducts = (await HeadStartSDK.Suppliers.CanDeleteLocation(
       locationID
-    )) as unknown) as boolean
+    )) as unknown as boolean
     this.canDelete.emit(hasNoProducts)
   }
 
   updateResourceFromEvent(event: any, field: string): void {
-    this.updateResource.emit({ value: event.target.value, field })
+    this.updateResource.emit({
+      value: event.target.value,
+      field,
+      form: this.resourceForm,
+    })
   }
 
   handleSellerAddressSelect(address: Address): void {

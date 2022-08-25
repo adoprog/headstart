@@ -2,7 +2,7 @@
 export interface TemplateProductFlat {
     ID?: string
     Active?: boolean
-    ProductType?: 'Standard' | 'Quote' | 'PurchaseOrder' | 'Kit'
+    ProductType?: 'Standard' | 'Quote'
     Name?: string
     Description?: string
     QuantityMultiplier?: number
@@ -16,7 +16,6 @@ export interface TemplateProductFlat {
     TaxDescription?: string
     UnitOfMeasureQuantity?: number
     UnitOfMeasure?: string
-    IsResale?: boolean
     ApplyTax?: boolean
     ApplyShipping?: boolean
     MinQuantity?: number

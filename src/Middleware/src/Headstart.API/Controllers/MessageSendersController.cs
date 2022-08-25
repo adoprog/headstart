@@ -1,9 +1,8 @@
-using Headstart.Common.Services;
-using Microsoft.AspNetCore.Mvc;
-using Headstart.Models.Misc;
-using ordercloud.integrations.library;
 using Headstart.API.Commands;
+using Headstart.Common.Models;
+using Microsoft.AspNetCore.Mvc;
 using OrderCloud.Catalyst;
+using OrderCloud.Integrations.Emails;
 
 namespace Headstart.Common.Controllers
 {
@@ -16,65 +15,64 @@ namespace Headstart.Common.Controllers
     /// 3. Query the API for all of the possible approving users (which can be complex)
     /// 4. Look up approving users' contact info
     /// 5. Send each message
-    /// 
+    ///
     /// Message senders take the hard work out of all that and will send one web request for each message that should be sent.
     /// </summary>
     // TODO: explore moving ordersubmit and shipmentcreated to message senders
     // unless there's a good reason not to it would be good to have all messages firing from one centralized location
-
     [Route("messagesenders")]
-    public class MessageSendersController
+    public class MessageSendersController : CatalystController
     {
-        private readonly ISendgridService _sendgridService;
-        private readonly IOrderCommand _orderCommand;
+        private readonly IEmailServiceProvider emailServiceProvider;
+        private readonly IOrderCommand orderCommand;
 
-        public MessageSendersController(ISendgridService sendgridService, IOrderCommand orderCommand)
+        public MessageSendersController(IEmailServiceProvider emailServiceProvider, IOrderCommand orderCommand)
         {
-            _sendgridService = sendgridService;
-            _orderCommand = orderCommand;
+            this.emailServiceProvider = emailServiceProvider;
+            this.orderCommand = orderCommand;
         }
 
         [HttpPost, Route("newuserinvitation")]
         [OrderCloudWebhookAuth]
         public async void HandleNewUser([FromBody] MessageNotification<PasswordResetEventBody> payload)
         {
-            await _sendgridService.SendNewUserEmail(payload);
+            await emailServiceProvider.SendNewUserEmail(payload);
         }
 
         [HttpPost, Route("forgottenpassword")]
         [OrderCloudWebhookAuth]
         public async void HandlePasswordReset([FromBody] MessageNotification<PasswordResetEventBody> payload)
         {
-            await _sendgridService.SendPasswordResetEmail(payload);
+            await emailServiceProvider.SendPasswordResetEmail(payload);
         }
 
         [HttpPost, Route("ordersubmittedforapproval")]
         [OrderCloudWebhookAuth]
         public async void HandleOrderSubmittedForApproval([FromBody] MessageNotification<OrderSubmitEventBody> payload)
         {
-            await _sendgridService.SendOrderSubmittedForApprovalEmail(payload);
+            await emailServiceProvider.SendOrderSubmittedForApprovalEmail(payload);
         }
 
         [HttpPost, Route("ordersubmittedforyourapproval")]
         [OrderCloudWebhookAuth]
         public async void HandleOrderRequiresApproval([FromBody] MessageNotification<OrderSubmitEventBody> payload)
         {
-            await _orderCommand.PatchOrderRequiresApprovalStatus(payload.EventBody.Order.ID);
-            await _sendgridService.SendOrderRequiresApprovalEmail(payload);
+            await orderCommand.PatchOrderRequiresApprovalStatus(payload.EventBody.Order.ID);
+            await emailServiceProvider.SendOrderRequiresApprovalEmail(payload);
         }
 
         [HttpPost, Route("OrderApproved")]
         [OrderCloudWebhookAuth]
         public async void HandleOrderApproved([FromBody] MessageNotification<OrderSubmitEventBody> payload)
         {
-            await _sendgridService.SendOrderApprovedEmail(payload);
+            await emailServiceProvider.SendOrderApprovedEmail(payload);
         }
 
         [HttpPost, Route("orderdeclined")]
         [OrderCloudWebhookAuth]
         public async void HandleOrderDeclined([FromBody] MessageNotification<OrderSubmitEventBody> payload)
         {
-            await _sendgridService.SendOrderDeclinedEmail(payload);
+            await emailServiceProvider.SendOrderDeclinedEmail(payload);
         }
     }
 }

@@ -24,7 +24,7 @@
       (!isMyResource || _currentResourceNamePlural !== 'suppliers') &&
       !excludeFromFilterBar
     "
-    class="row additional-item-edit-resource additional-item-table"
+    class="row additional-item-edit-resource additional-item-table pb-4"
   >
     <div
       *ngIf="parentResourceService && !isMyResource"
@@ -70,18 +70,13 @@
       <!-- /sub resource dropdown -->
     </div>
     <div
-      class="col-lg-2 col-md-1 col-sm-7 d-flex justify-content-start align-items-center"
-      *ngIf="
-        shouldShowCreateNew && _currentResourceNamePlural !== 'storefronts'
-      "
+      class="col-sm d-flex justify-content-start align-items-center"
+      *ngIf="shouldShowCreateNew"
     >
       <!-- route accidentally works for both subresoures and first level resources because the extra / are ignored by the router it appears-->
       <button
-        *ngIf="
-          _currentResourceNamePlural !== 'products' &&
-          _currentResourceNamePlural !== 'storefronts'
-        "
-        class="btn btn-block brand-button--orange"
+        *ngIf="_currentResourceNamePlural !== 'products'"
+        class="btn btn-block btn-primary"
         routerLink="/{{
           isMyResource ? _ocService.myRoute : _ocService.route
         }}/{{ selectedParentResourceID }}/{{
@@ -89,7 +84,8 @@
         }}/new"
         [disabled]="isCreatingNew"
       >
-        Create New {{ labelSingular | translate }}
+        {{ 'ADMIN.RESOURCES.CREATE_NEW' | translate }}
+        {{ labelSingular | translate }}
       </button>
 
       <div
@@ -99,10 +95,11 @@
       >
         <button
           ngbDropdownToggle
-          class="btn btn-block brand-button--orange"
+          class="btn btn-block btn-outline-red text-left"
           [disabled]="isCreatingNew"
         >
-          Create New {{ labelSingular | translate }}
+          {{ 'ADMIN.RESOURCES.CREATE_NEW' | translate }}
+          {{ labelSingular | translate }}
         </button>
         <div ngbDropdownMenu>
           <button
@@ -114,7 +111,7 @@
               _ocService.secondaryResourceLevel
             }}/new/{{ type.Link }}"
           >
-            {{ type.Display }}
+            {{ type.Display | translate }}
           </button>
         </div>
       </div>
@@ -122,7 +119,7 @@
     <div
       [ngClass]="{
         'col-lg-7 col-md-7': parentResourceService,
-        'col-lg-10 col-md-10': !parentResourceService && shouldShowCreateNew,
+        'col-lg-9': !parentResourceService && shouldShowCreateNew,
         'col-lg-12': !parentResourceService && !shouldShowCreateNew
       }"
     >
@@ -139,125 +136,126 @@
             >
             </search-component>
           </div>
-          <div class="col-md-1 d-flex align-items-center">
-            <div class="d-flex justify-content-start align-items-center">
-              <div
-                *ngIf="filterForm"
-                class="icon-button ripple"
-                placement="{{
-                  screenSize === 'xs' && 'sm' && 'md' ? 'left' : 'bottom'
-                }}"
-                [ngbPopover]="filters"
-                autoClose="outside"
-                triggers="manual"
-                #popover="ngbPopover"
-                (click)="openPopover()"
-                popoverTitle="Filter"
-              >
-                <fa-layers class="fa-layers fa-fw">
-                  <fa-icon [icon]="faFilter"> </fa-icon>
-                  <fa-layers-counter
-                    *ngIf="activeFilterCount && activeFilterCount > 0"
-                    class="badge__counter--large layers-background"
-                    [content]="activeFilterCount"
-                  >
-                  </fa-layers-counter>
-                </fa-layers>
-              </div>
-              <div
-                *ngIf="filterForm && activeFilterCount > 0"
-                class="icon-button ripple"
-                (click)="clearAllFilters()"
-              >
-                <fa-icon [icon]="faTimes"></fa-icon>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-6 d-flex align-items-center">
-            <ng-content select=".actionBar"></ng-content>
-          </div>
-        </div>
-      </div>
-      <!-- ngContent for filters popover -->
-      <ng-template #filters>
-        <div>
-          <!-- filter component -->
-          <!-- <form *ngIf="filterForm" -->
-          <form class="d-flex flex-column filters" [formGroup]="filterForm">
-            <div
-              *ngFor="let filter of _filterConfig?.Filters"
-              class="group mt-2"
-            >
-              <div *ngIf="shouldFilterDisplay(filter)">
-                <label translate>{{ filter.Display }}</label>
-                <select
-                  class="form-control input-sm"
-                  *ngIf="
-                    filter?.Type === 'Dropdown' ||
-                    filter?.BuyerAppFilterType === 'SelectOption' ||
-                    filter?.BuyerAppFilterType === 'NonUI'
-                  "
-                  type="select"
-                  required
-                  [formControlName]="filter.Path"
+          <!-- Facet Popover -->
+          <ng-container *ngIf="_filterConfig?.Filters?.length > 0">
+            <div class="col-md-1 d-flex align-items-center mr-md-auto">
+              <div class="d-flex justify-content-start align-items-center">
+                <div
+                  *ngIf="filterForm"
+                  class="icon-button ripple shadow-sm"
+                  placement="{{
+                    screenSize === 'xs' && 'sm' && 'md' ? 'left' : 'bottom'
+                  }}"
+                  [ngbPopover]="filters"
+                  autoClose="outside"
+                  triggers="manual"
+                  #popover="ngbPopover"
+                  (click)="openPopover()"
+                  [popoverTitle]="'ADMIN.FILTERS.FILTER' | translate"
                 >
-                  <ng-container *ngFor="let option of filter.Items">
-                    <option
-                      *ngIf="isBoolean(option.Value)"
-                      value="{{ option.Value }}"
-                      translate
+                  <fa-layers class="fa-layers icon-wrapper">
+                    <fa-icon [icon]="faFilter"> </fa-icon>
+                    <fa-layers-counter
+                      *ngIf="activeFilterCount && activeFilterCount > 0"
+                      class="badge__counter--large layers-background"
+                      [content]="activeFilterCount"
                     >
-                      {{ option.Value | yesNo }}
-                    </option>
-                    <option
-                      *ngIf="!isBoolean(option.Value)"
-                      value="{{ option.Value }}"
-                      translate
-                    >
-                      {{ option.Text }}
-                    </option>
-                  </ng-container>
-                </select>
-                <div class="input-group" *ngIf="filter?.Type === 'DateFilter'">
-                  <input
-                    class="form-control"
-                    placeholder="yyyy-mm-dd"
-                    value="{{ filter.Path === 'from' ? fromDate : toDate }}"
-                    name="datePicker"
-                    [formControlName]="filter.Path"
-                    ngbDatepicker
-                    #d="ngbDatepicker"
-                  />
-                  <div class="input-group-append">
-                    <button
-                      class="btn btn-outline-primary calendar"
-                      (click)="d.toggle()"
-                      type="button"
-                    >
-                      <fa-icon
-                        [icon]="faCalendar"
-                        id="calendar-addon-from"
-                      ></fa-icon>
-                    </button>
+                    </fa-layers-counter>
+                  </fa-layers>
+                </div>
+                <div
+                  *ngIf="filterForm && activeFilterCount > 0"
+                  class="icon-button ripple"
+                  (click)="clearAllFilters()"
+                >
+                  <div class="icon-wrapper">
+                    <fa-icon [icon]="faTimes"></fa-icon>
                   </div>
                 </div>
               </div>
             </div>
-          </form>
-          <div class="d-flex justify-content-between align-items-center mt-3">
-            <button
-              (click)="closePopover()"
-              class="btn btn-sm btn-link text-dark"
-            >
-              Cancel
-            </button>
-            <button
-              (click)="handleApplyFilters()"
-              class="btn btn-sm btn-primary"
-            >
-              Apply
-            </button>
+            <div class="col-md d-flex align-items-center justify-content-end">
+              <ng-content select=".actionBar"></ng-content>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+      <!-- ngContent for filters popover -->
+      <ng-template #filters>
+        <!-- filter component -->
+        <form class="d-flex flex-column filters" [formGroup]="filterForm">
+          <div *ngFor="let filter of _filterConfig?.Filters" class="group mt-2">
+            <div *ngIf="shouldFilterDisplay(filter)">
+              <label translate>{{ filter.Display }}</label>
+              <select
+                class="form-control input-sm"
+                *ngIf="
+                  filter?.Type === 'Dropdown' ||
+                  filter?.BuyerAppFilterType === 'SelectOption' ||
+                  filter?.BuyerAppFilterType === 'NonUI'
+                "
+                type="select"
+                required
+                [formControlName]="filter.Path"
+              >
+                <ng-container *ngFor="let option of filter.Items">
+                  <option
+                    *ngIf="isBoolean(option.Value)"
+                    value="{{ option.Value }}"
+                    translate
+                  >
+                    {{ option.Value | yesNo }}
+                  </option>
+                  <option
+                    *ngIf="!isBoolean(option.Value)"
+                    value="{{ option.Value }}"
+                    translate
+                  >
+                    {{ option.Text }}
+                  </option>
+                </ng-container>
+              </select>
+              <div class="input-group" *ngIf="filter?.Type === 'DateFilter'">
+                <input
+                  class="form-control"
+                  placeholder="yyyy-mm-dd"
+                  value="{{ filter.Path === 'from' ? fromDate : toDate }}"
+                  name="datePicker"
+                  [formControlName]="filter.Path"
+                  ngbDatepicker
+                  #d="ngbDatepicker"
+                />
+                <div class="input-group-append">
+                  <button
+                    class="btn btn-outline-primary calendar"
+                    (click)="d.toggle()"
+                    type="button"
+                  >
+                    <fa-icon
+                      [icon]="faCalendar"
+                      id="calendar-addon-from"
+                    ></fa-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
+        </form>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <button
+            (click)="closePopover()"
+            class="btn btn-sm btn-link text-dark"
+            translate
+          >
+            COMMON.CANCEL
+          </button>
+          <button
+            (click)="handleApplyFilters()"
+            class="btn btn-sm btn-primary"
+            translate
+          >
+            ADMIN.FILTERS.APPLY
+          </button>
         </div>
       </ng-template>
       <!-- /ngContent for filters popover -->
@@ -267,9 +265,7 @@
   <div class="row">
     <div class="col-md-12">
       <!-- full table view -->
-      <div
-        *ngIf="showFilterBar()"
-      >
+      <div *ngIf="showFilterBar()">
         <perfect-scrollbar
           id="perfectScroll"
           class="scrollbar-top w-100"
@@ -382,7 +378,14 @@
         <div class="col-md-9 col-sm-12 bg-light contents">
           <div
             *ngIf="shouldShowTitleContainer"
-            class="py-1 d-flex flex-row justify-content-between resource-title-container additional-item-edit-resource"
+            class="
+              py-1
+              d-flex
+              flex-row
+              justify-content-between
+              resource-title-container
+              additional-item-edit-resource
+            "
           >
             <span
               class="d-flex flex-row justify-content-start align-items-center"
@@ -406,9 +409,10 @@
             <button
               *ngIf="canImpersonateResource && !isCreatingNew"
               (click)="impersonateUser()"
-              class="btn brand-button--orange"
+              class="btn btn-primary"
+              translate
             >
-              Impersonate
+              ADMIN.BUYER_USERS.IMPERSONATE
             </button>
             <span
               class="d-flex align-items-center"
@@ -454,7 +458,13 @@
           <!-- TODO: 1/2 Abstract into component to be used anywhere using inputs and outputs -->
           <div
             *ngIf="shouldShowResourceActions"
-            class="d-flex justify-content-between align-items-center py-2 additional-item-edit-resource"
+            class="
+              d-flex
+              justify-content-between
+              align-items-center
+              py-2
+              additional-item-edit-resource
+            "
           >
             <delete-confirm-modal-component
               *ngIf="!isCreatingNew && !isMyResource && canBeDeleted"
@@ -484,10 +494,10 @@
                 "
                 (click)="handleSave()"
               >
-                {{ getSaveBtnText() }}
+                {{ getSaveBtnText() | translate }}
               </button>
               <button
-                class="btn brand-button ml-3"
+                class="btn btn-primary ml-3"
                 (click)="handleDiscardChanges()"
                 *ngIf="areChanges && !isCreatingNew"
               >

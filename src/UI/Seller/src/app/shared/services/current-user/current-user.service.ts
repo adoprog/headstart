@@ -1,20 +1,13 @@
 import { Injectable, Inject } from '@angular/core'
-import {
-  Supplier,
-  OcMeService,
-  OcAuthService,
-  OcTokenService,
-  MeUser,
-  OcSupplierService,
-} from '@ordercloud/angular-sdk'
+import { Supplier, Me, Auth, Tokens, MeUser } from 'ordercloud-javascript-sdk'
 import { applicationConfiguration } from '@app-seller/config/app.config'
 import { AppAuthService } from '@app-seller/auth/services/app-auth.service'
 import { AppStateService } from '../app-state/app-state.service'
-import { HeadStartSDK, ImageAsset } from '@ordercloud/headstart-sdk'
-import { Tokens } from 'ordercloud-javascript-sdk'
+import { HeadStartSDK, HSSupplier, ImageAsset } from '@ordercloud/headstart-sdk'
 import { BehaviorSubject } from 'rxjs'
 import { AppConfig } from '@app-seller/models/environment.types'
 import { UserContext } from '@app-seller/models/user.types'
+import { LanguageSelectorService } from '@app-seller/shared'
 
 @Injectable({
   providedIn: 'root',
@@ -22,26 +15,27 @@ import { UserContext } from '@app-seller/models/user.types'
 export class CurrentUserService {
   me: MeUser
   mySupplier: Supplier
-  public userSubject: BehaviorSubject<MeUser<any>> = new BehaviorSubject<
-    MeUser<any>
-  >({})
-  public profileImgSubject: BehaviorSubject<ImageAsset> = new BehaviorSubject<ImageAsset>(
-    {}
-  )
+  public userSubject: BehaviorSubject<MeUser> = new BehaviorSubject<MeUser>({})
+  public profileImgSubject: BehaviorSubject<ImageAsset> =
+    new BehaviorSubject<ImageAsset>({})
   constructor(
-    private ocMeService: OcMeService,
-    private ocAuthService: OcAuthService,
     @Inject(applicationConfiguration) private appConfig: AppConfig,
-    private ocTokenService: OcTokenService,
+    private languageService: LanguageSelectorService,
     private appAuthService: AppAuthService,
-    private appStateService: AppStateService,
-    private ocSupplierService: OcSupplierService
-  ) { }
+    private appStateService: AppStateService
+  ) {}
 
-  async login(username: string, password: string, rememberMe: boolean) {
-    const accessToken = await this.ocAuthService
-      .Login(username, password, this.appConfig.clientID, this.appConfig.scope)
-      .toPromise()
+  async login(
+    username: string,
+    password: string,
+    rememberMe: boolean
+  ): Promise<void> {
+    const accessToken = await Auth.Login(
+      username,
+      password,
+      this.appConfig.clientID,
+      this.appConfig.scope
+    )
 
     if (rememberMe && accessToken.refresh_token) {
       /**
@@ -49,15 +43,15 @@ export class CurrentUserService {
        * refresh tokens are configured per clientID and initially set to 0
        * a refresh token of 0 means no refresh token is returned in OAuth accessToken
        */
-      this.ocTokenService.SetRefresh(accessToken.refresh_token)
+      Tokens.SetRefreshToken(accessToken.refresh_token)
       this.appAuthService.setRememberStatus(true)
     }
-    HeadStartSDK.Tokens.SetAccessToken(accessToken.access_token)
     Tokens.SetAccessToken(accessToken.access_token)
-    this.ocTokenService.SetAccess(accessToken.access_token)
+    Tokens.SetAccessToken(accessToken.access_token)
     this.appStateService.isLoggedIn.next(true)
-    this.me = await this.ocMeService.Get().toPromise()
+    this.me = await Me.Get()
     this.userSubject.next(this.me)
+    await this.languageService.SetTranslateLanguage()
     if (this.me?.Supplier) {
       this.mySupplier = await HeadStartSDK.Suppliers.GetMySupplier(
         this.me?.Supplier?.ID
@@ -70,19 +64,19 @@ export class CurrentUserService {
   }
 
   async patchUser(patchObj: Partial<MeUser>): Promise<MeUser> {
-    const patchedUser = await this.ocMeService.Patch(patchObj).toPromise()
+    const patchedUser = await Me.Patch(patchObj)
     this.userSubject.next(patchedUser)
     this.me = patchedUser
     return this.me
   }
 
   async refreshUser(): Promise<MeUser> {
-    this.me = await this.ocMeService.Get().toPromise()
+    this.me = await Me.Get()
     this.userSubject.next(this.me)
     return this.me
   }
 
-  async getMySupplier(): Promise<Supplier> {
+  async getMySupplier(): Promise<HSSupplier> {
     const me = await this.getUser()
     if (!me.Supplier) return
     return this.mySupplier && this.mySupplier.ID === me.Supplier.ID
@@ -90,8 +84,8 @@ export class CurrentUserService {
       : await this.refreshSupplier(me.Supplier.ID)
   }
 
-  async refreshSupplier(supplierID): Promise<Supplier> {
-    const token = await this.ocTokenService.GetAccess()
+  async refreshSupplier(supplierID: string): Promise<HSSupplier> {
+    const token = Tokens.GetAccessToken()
     this.mySupplier = await HeadStartSDK.Suppliers.GetMySupplier(
       supplierID,
       token
@@ -106,8 +100,8 @@ export class CurrentUserService {
 
   async constructUserContext(): Promise<UserContext> {
     const me: MeUser = await this.getUser()
-    const userType = await this.appAuthService.getOrdercloudUserType()
-    const userRoles = await this.appAuthService.getUserRoles()
+    const userType = this.appAuthService.getOrdercloudUserType()
+    const userRoles = this.appAuthService.getUserRoles()
     return {
       Me: me,
       UserType: userType,
@@ -115,9 +109,9 @@ export class CurrentUserService {
     }
   }
 
-  async isSupplierUser() {
+  async isSupplierUser(): Promise<boolean> {
     const me = await this.getUser()
-    return me.Supplier ? true : false
+    return Boolean(me.Supplier)
   }
 
   onChange(callback: (user: MeUser) => void): void {

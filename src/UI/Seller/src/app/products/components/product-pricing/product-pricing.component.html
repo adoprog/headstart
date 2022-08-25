@@ -7,13 +7,22 @@
     }}
   </h4>
   <span *ngIf="!isRequired">- Optional</span>
+  <span class="required-field" *ngIf="isRequired" translate>ADMIN.COMMON.REQUIRED_FIELDS</span>
+
   <div class="d-block">
     <div
       *ngIf="
         superProduct?.Product?.xp?.ProductType === 'Quote' &&
         superProduct?.PriceSchedule?.PriceBreaks.length === 1
       "
-      class="alert alert-info d-inline-block justify-content-start align-items-center mt-3 set-to-top"
+      class="
+        alert alert-info
+        d-inline-block
+        justify-content-start
+        align-items-center
+        mt-3
+        set-to-top
+      "
     >
       <p class="mb-0" translate>
         <fa-icon [icon]="faExclamationCircle" class="mr-3"> </fa-icon>
@@ -27,11 +36,12 @@
     [priceSchedule]="supplierPriceSchedule"
     [variantCount]="superProduct?.Variants?.length"
     [specCount]="superProduct?.Specs?.length"
+    [isRequired]="isRequired"
     (priceScheduleUpdated)="updateSupplierPriceSchedule($event)"
   >
   </price-break-editor>
   <div
-    *ngIf="readonly"
+    *ngIf="isSellerUser"
     class="row pt-3 mt-3 bg-white shadow-sm card-highlight-border w-100 pl-3"
   >
     <div class="w-100">
@@ -109,7 +119,7 @@
           <span translate>ADMIN.PRODUCT_EDIT.DEFAULT_MARKUP_INFO_1</span>
           {{ selectedSuperHSBuyer?.Buyer?.Name }}
           <span translate>ADMIN.PRODUCT_EDIT.DEFAULT_MARKUP_INFO_2</span>
-          {{ selectedSuperHSBuyer?.Markup?.Percent || 0 }}%.
+          {{ selectedSuperHSBuyer?.Buyer?.xp?.MarkupPercent || 0 }}%.
         </p>
 
         <price-break-editor

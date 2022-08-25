@@ -20,9 +20,8 @@ import {
 export class OrderFilterService {
   activeOrderID: string // TODO - make this read-only in components
 
-  public activeFiltersSubject: BehaviorSubject<OrderFilters> = new BehaviorSubject<OrderFilters>(
-    this.getDefaultParms()
-  )
+  public activeFiltersSubject: BehaviorSubject<OrderFilters> =
+    new BehaviorSubject<OrderFilters>(this.getDefaultParms())
 
   constructor(
     private currentUser: CurrentUserService,
@@ -122,11 +121,13 @@ export class OrderFilterService {
   }
 
   // Used in requests to the OC API
-  async listOrders(): Promise<ListPage<HSOrder>> {
+  async listOrders(quote: boolean): Promise<ListPage<HSOrder>> {
     const viewContext = this.getOrderViewContext()
     switch (viewContext) {
       case OrderViewContext.MyOrders:
-        return await Me.ListOrders(this.createListOptions() as any)
+        return await Me.ListOrders(this.createListOptions(quote) as any)
+      case OrderViewContext.Quote:
+        return await Me.ListOrders(this.createListOptions(quote) as any)
       case OrderViewContext.Approve:
         return await Me.ListApprovableOrders(this.createListOptions() as any)
       case OrderViewContext.Location:
@@ -179,6 +180,9 @@ export class OrderFilterService {
     if (url.includes('orders/location')) {
       return OrderViewContext.Location
     }
+    if (url.includes('orders/quotes')) {
+      return OrderViewContext.Quote
+    }
     return OrderViewContext.MyOrders
   }
 
@@ -196,7 +200,7 @@ export class OrderFilterService {
     }
   }
 
-  private createListOptions(): ListArgs<HSOrder> {
+  private createListOptions(quote = false): ListArgs<any> {
     const {
       page,
       sortBy,
@@ -210,6 +214,7 @@ export class OrderFilterService {
     const to = toDate ? `${toDate}` : undefined
     const favorites =
       this.currentUser.get().FavoriteOrderIDs.join('|') || undefined
+    const quoteStatus = quote ? 'NeedsSellerReview|NeedsBuyerReview' : undefined
     const listOptions = {
       page,
       search,
@@ -220,8 +225,9 @@ export class OrderFilterService {
         to,
         xp: {
           SubmittedOrderStatus: undefined,
+          QuoteStatus: quoteStatus,
         },
-        Status: undefined,
+        Status: quote ? 'Unsubmitted' : undefined,
       },
     }
     return this.addStatusFilters(status, listOptions as any)

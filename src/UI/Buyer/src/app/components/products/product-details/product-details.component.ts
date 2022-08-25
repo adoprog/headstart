@@ -8,16 +8,16 @@ import {
 } from 'ordercloud-javascript-sdk'
 import { PriceSchedule } from 'ordercloud-javascript-sdk'
 import {
-  HSLineItem,
-  QuoteOrderInfo,
   HSVariant,
   HSMeProduct,
   HSSupplier,
   DocumentAsset,
+  SuperHSMeProduct,
+  HSOrder,
 } from '@ordercloud/headstart-sdk'
 import { Observable } from 'rxjs'
 import { SpecFormService } from '../spec-form/spec-form.service'
-import { SuperHSProduct } from '@ordercloud/headstart-sdk'
+import { Me } from 'ordercloud-javascript-sdk'
 import { FormGroup } from '@angular/forms'
 import { ProductDetailService } from './product-detail.service'
 import { ToastrService } from 'ngx-toastr'
@@ -26,6 +26,11 @@ import { QtyChangeEvent, SpecFormEvent } from 'src/app/models/product.types'
 import { CurrentUser } from 'src/app/models/profile.types'
 import { ContactSupplierBody } from 'src/app/models/buyer.types'
 import { ModalState } from 'src/app/models/shared.types'
+import { SitecoreSendTrackingService } from 'src/app/services/sitecore-send/sitecore-send-tracking.service'
+import { OrderType } from 'src/app/models/order.types'
+import { TranslateService } from '@ngx-translate/core'
+import { AppConfig } from 'src/app/models/environment.types'
+import { sum } from 'lodash'
 
 @Component({
   templateUrl: './product-details.component.html',
@@ -37,18 +42,18 @@ export class OCMProductDetails implements OnInit {
   faListUl = faListUl
   faTimes = faTimes
 
-  _superProduct: SuperHSProduct
+  _superProduct: SuperHSMeProduct
   specs: Spec[]
   _product: HSMeProduct
+  _bundledProducts: HSMeProduct[]
   priceSchedule: PriceSchedule
   priceBreaks: PriceBreak[]
-  unitPrice: number
   attachments: DocumentAsset[] = []
   isOrderable = false
   quantity: number
-  price: number
   percentSavings: number
   relatedProducts$: Observable<HSMeProduct[]>
+  selectedRelatedProducts: HSMeProduct[] = []
   favoriteProducts: string[] = []
   qtyValid = true
   supplierNote: string
@@ -58,7 +63,7 @@ export class OCMProductDetails implements OnInit {
   currentUser: CurrentUser
   showRequestSubmittedMessage = false
   showContactSupplierFormSubmittedMessage = false
-  submittedQuoteOrder: any
+  submittedQuoteOrder: HSOrder
   showGrid = false
   isAddingToCart = false
   contactRequest: ContactSupplierBody
@@ -68,31 +73,51 @@ export class OCMProductDetails implements OnInit {
   variant: HSVariant
   variantInventory: number
   _productSupplier: HSSupplier
+  isQuoteAnonUser = false
+  isBundle = false
+  quoteContactEmail = ''
+  price: number
+
   constructor(
     private specFormService: SpecFormService,
     private context: ShopperContextService,
     private productDetailService: ProductDetailService,
-    private toastrService: ToastrService
+    private toastrService: ToastrService,
+    private send: SitecoreSendTrackingService,
+    private translate: TranslateService,
+    private appConfig: AppConfig
   ) {}
 
-  @Input() set product(superProduct: SuperHSProduct) {
+  @Input() set product(superProduct: SuperHSMeProduct) {
     this._superProduct = superProduct
     this._product = superProduct.Product
+    this._bundledProducts = superProduct.BundledProducts
+    this.isBundle =
+      this._product.xp.ProductType === 'Bundle' &&
+      this._bundledProducts?.length > 0
+    this.calculatePrice()
     this.attachments = superProduct?.Product?.xp?.Documents
     this.priceBreaks = superProduct.PriceSchedule?.PriceBreaks
-    this.unitPrice =
-      this.priceBreaks && this.priceBreaks.length
-        ? this.priceBreaks[0].Price
-        : null
-    this.isOrderable = !!superProduct.PriceSchedule
+    this.isOrderable = Boolean(superProduct.PriceSchedule) || this.isBundle
     this.supplierNote = this._product.xp && this._product.xp.Note
     this.specs = superProduct.Specs
     if (this._product.DefaultSupplierID !== null) {
       this.setSupplier(this._product.DefaultSupplierID)
+    } else {
+      this.setSellerQuoteContactEmail()
     }
     this.setPageTitle()
     this.populateInactiveVariants(superProduct)
-    this.showGrid = superProduct?.PriceSchedule?.UseCumulativeQuantity
+    this.showGrid =
+      superProduct?.PriceSchedule?.UseCumulativeQuantity &&
+      superProduct?.Product?.xp?.ProductType !== 'Quote'
+    this.send.viewProduct(superProduct.Product)
+    this.isQuoteAnonUser =
+      this.isQuoteProduct() && this.context.currentUser.isAnonymous()
+
+    if (superProduct?.Product?.xp?.RelatedProducts?.length) {
+      this.setRelatedProducts(superProduct?.Product?.xp?.RelatedProducts)
+    }
   }
 
   ngOnInit(): void {
@@ -104,11 +129,29 @@ export class OCMProductDetails implements OnInit {
     )
   }
 
-  async setSupplier(supplierID: string): Promise<void> {
-    this._productSupplier = await Suppliers.Get(supplierID)
+  async setRelatedProducts(relatedProducts: string[]): Promise<void> {
+    const selectedProducts = await Me.ListProducts({
+      filters: { ID: relatedProducts.join('|') },
+    })
+    this.selectedRelatedProducts = selectedProducts.Items
   }
 
-  setPageTitle() {
+  async setSupplier(supplierID: string): Promise<void> {
+    this._productSupplier = await Suppliers.Get<HSSupplier>(supplierID)
+    if (this._productSupplier?.xp?.SupportContact?.Email) {
+      this.quoteContactEmail = this._productSupplier?.xp?.SupportContact?.Email
+    } else if (this._productSupplier?.xp?.NotificationRcpts?.length) {
+      this.quoteContactEmail = this._productSupplier.xp.NotificationRcpts[0]
+    } else {
+      console.error('No email available for this supplier')
+    }
+  }
+
+  setSellerQuoteContactEmail(): void {
+    this.quoteContactEmail = this.appConfig.sellerQuoteContactEmail
+  }
+
+  setPageTitle(): void {
     this.context.router.setPageTitle(this._superProduct.Product.Name)
   }
 
@@ -151,7 +194,7 @@ export class OCMProductDetails implements OnInit {
     this.isInactiveVariant = event
   }
 
-  populateInactiveVariants(superProduct: SuperHSProduct): void {
+  populateInactiveVariants(superProduct: SuperHSMeProduct): void {
     this._disabledVariants = []
     superProduct.Variants?.forEach((variant) => {
       if (!variant.Active) {
@@ -167,18 +210,25 @@ export class OCMProductDetails implements OnInit {
   qtyChange(event: QtyChangeEvent): void {
     this.qtyValid = event.valid
     if (event.valid) {
-      this.quantity = event.qty
+      this.quantity =
+        typeof event.qty === 'string' ? parseInt(event.qty) : event.qty
       this.calculatePrice()
     }
   }
 
   calculatePrice(): void {
-    this.price = this.productDetailService.getProductPrice(
-      this.priceBreaks,
-      this.specs,
-      this.quantity,
-      this.specForm
-    )
+    if (!this._product) {
+      return
+    }
+    this.price = this.isBundle
+      ? this.getBundlePrice()
+      : this.productDetailService.getProductPrice(
+          this._product?.PriceSchedule,
+          this.quantity,
+          this.specs,
+          this.specForm,
+          this._product?.PriceSchedule?.IsOnSale
+        )
     if (this.priceBreaks?.length) {
       const basePrice = this.quantity * this.priceBreaks[0].Price
       this.percentSavings = this.productDetailService.getPercentSavings(
@@ -188,9 +238,81 @@ export class OCMProductDetails implements OnInit {
     }
   }
 
+  getBundlePrice(): number {
+    if (!this._bundledProducts?.length) {
+      return 0
+    }
+    const prices = this._bundledProducts.map((productBundle) =>
+      this.productDetailService.getProductPrice(
+        productBundle.PriceSchedule,
+        this.quantity || 1,
+        [], // we don't (yet) support bundles to have specs/variants
+        null,
+        productBundle.PriceSchedule.IsOnSale
+      )
+    )
+    return sum(prices)
+  }
+
   async addToCart(): Promise<void> {
     this.isAddingToCart = true
     try {
+      const currentOrder = this.context.order.get()
+      if (this.isBundle) {
+        await this.context.order.cart.addMany(
+          this._bundledProducts.map((bundledProduct) => ({
+            ProductID: bundledProduct.ID,
+            Quantity: this.quantity || 1,
+            xp: {
+              ImageUrl: this.specFormService.getLineItemImageUrl(
+                bundledProduct.xp?.Images,
+                [],
+                null
+              ),
+            },
+          }))
+        )
+        return
+      }
+
+      if (this._product.xp.ProductType === 'Quote') {
+        if (
+          currentOrder?.xp?.OrderType == 'Standard' &&
+          currentOrder?.LineItemCount > 0
+        ) {
+          const existingCartQuoteError = this.translate.instant(
+            'PRODUCTS.DETAILS.QUOTE_EXISTING_CART_ERROR'
+          ) as string
+          this.toastrService.error(existingCartQuoteError)
+          this.isAddingToCart = false
+          return
+        } else {
+          currentOrder.xp.OrderType = OrderType.Quote
+          currentOrder.xp.QuoteBuyerContactEmail = this.currentUser?.Email
+          currentOrder.xp.QuoteSellerContactEmail = this.quoteContactEmail
+          currentOrder.xp.QuoteSupplierID = this._productSupplier?.ID
+          currentOrder.xp.QuoteOrderInfo = {
+            FirstName: this.currentUser?.FirstName,
+            LastName: this.currentUser?.LastName,
+            Phone: this.currentUser?.Phone,
+            Email: this.currentUser?.Email,
+            BuyerLocation: '',
+          }
+          await this.context.order.patch(currentOrder)
+        }
+      } else {
+        if (
+          currentOrder?.xp?.OrderType == 'Quote' &&
+          currentOrder?.LineItemCount > 0
+        ) {
+          const existingCartStandardError = this.translate.instant(
+            'PRODUCTS.DETAILS.QUOTE_STANDARD_EXISTING_CART_ERROR'
+          ) as string
+          this.toastrService.error(existingCartStandardError)
+          this.isAddingToCart = false
+          return
+        }
+      }
       await this.context.order.cart.add({
         ProductID: this._product.ID,
         Quantity: this.quantity,
@@ -203,9 +325,6 @@ export class OCMProductDetails implements OnInit {
           ),
         },
       })
-    } catch (err) {
-      this.toastrService.error('Something went wrong')
-      console.log(err)
     } finally {
       this.isAddingToCart = false
     }
@@ -255,34 +374,6 @@ export class OCMProductDetails implements OnInit {
 
   dismissContactSupplierForm(): void {
     this.contactSupplierFormModal = ModalState.Closed
-  }
-
-  async submitQuoteOrder(info: QuoteOrderInfo): Promise<void> {
-    try {
-      const lineItem: HSLineItem = {}
-      lineItem.ProductID = this._product.ID
-      lineItem.Specs = this.specFormService.getLineItemSpecs(
-        this.specs,
-        this.specForm
-      )
-      lineItem.xp = {
-        ImageUrl: this.specFormService.getLineItemImageUrl(
-          this._superProduct.Product?.xp?.Images,
-          this._superProduct.Specs,
-          this.specForm
-        ),
-      }
-      this.submittedQuoteOrder = await this.context.order.submitQuoteOrder(
-        info,
-        lineItem
-      )
-      this.quoteFormModal = ModalState.Closed
-      this.showRequestSubmittedMessage = true
-    } catch (ex) {
-      this.showRequestSubmittedMessage = false
-      this.quoteFormModal = ModalState.Closed
-      throw ex
-    }
   }
 
   async submitContactSupplierForm(formData: any): Promise<void> {

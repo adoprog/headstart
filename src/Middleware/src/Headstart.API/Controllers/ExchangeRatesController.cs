@@ -1,39 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using Headstart.Models.Attributes;
+﻿using System.Threading.Tasks;
+using Headstart.Common.Commands;
+using Headstart.Common.Models;
 using Microsoft.AspNetCore.Mvc;
-using ordercloud.integrations.exchangerates;
-using ordercloud.integrations.library;
 using OrderCloud.Catalyst;
 using OrderCloud.SDK;
 
 namespace Headstart.Common.Controllers
 {
-    [DocComments("\"Integration\" represents Currency Conversion Charts")]
-    [HSSection.Integration(ListOrder = 4)]
+    /// <summary>
+    ///  Currency Conversion Charts.
+    /// </summary>
     [Route("exchangerates")]
-    public class ExchangeRatesController : BaseController
+    public class ExchangeRatesController : CatalystController
     {
-        private readonly IExchangeRatesCommand _command;
+        private readonly ICurrencyConversionCommand currencyConversionCommand;
 
-        public ExchangeRatesController(IExchangeRatesCommand command) 
+        public ExchangeRatesController(ICurrencyConversionCommand currencyConversionCommand)
         {
-            _command = command;
+            this.currencyConversionCommand = currencyConversionCommand;
         }
 
         [HttpGet, Route("{currency}")]
-        public async Task<ListPage<OrderCloudIntegrationsConversionRate>> Get(ListArgs<OrderCloudIntegrationsConversionRate> rateArgs, CurrencySymbol currency)
+        public async Task<ListPage<ConversionRate>> Get(ListArgs<ConversionRate> rateArgs, CurrencyCode currency)
         {
-            return await _command.Get(rateArgs, currency);
+            return await currencyConversionCommand.Get(rateArgs, currency);
         }
 
         [HttpGet, Route("supportedrates")]
-        public async Task<ListPage<OrderCloudIntegrationsConversionRate>> GetRateList()
+        public async Task<ListPage<ConversionRate>> GetRateList()
         {
-            var list = await _command.GetRateList();
-            return list;
+            return await currencyConversionCommand.GetRateList();
         }
     }
 }

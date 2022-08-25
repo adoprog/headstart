@@ -15,20 +15,6 @@ const AllProducts: HSRoute = {
   title: 'ADMIN.NAV.ALL_PRODUCTS',
   route: '/products',
 }
-// TODO: Reimplement once UI is added to address these xp values
-// const LiveProducts: HSRoute = {
-//   rolesWithAccess: [HSRoles.HSProductAdmin, HSRoles.HSProductReader, HSRoles.HSMeProductAdmin],
-//   title: 'ADMIN.NAV.LIVE_PRODUCTS',
-//   route: '/products',
-//   queryParams: { 'xp.Status': 'Published' },
-// };
-
-// const PendingProducts: HSRoute = {
-//   rolesWithAccess: [HSRoles.HSProductAdmin, HSRoles.HSProductReader, HSRoles.HSMeProductAdmin],
-//   title: 'ADMIN.NAV.PENDING_PRODUCTS',
-//   route: '/products',
-//   queryParams: { 'xp.Status': 'Draft' },
-// };
 
 const Promotions: HSRoute = {
   rolesWithAccess: [HSRoles.HSPromotionAdmin, HSRoles.HSPromotionReader],
@@ -76,6 +62,22 @@ const SupplierPurchaseOrders: HSRoute = {
   queryParams: { OrderDirection: 'Outgoing' },
 }
 
+const QuoteOrders: HSRoute = {
+  rolesWithAccess: [
+    HSRoles.HSOrderAdmin,
+    HSRoles.HSOrderReader,
+    HSRoles.HSShipmentAdmin,
+  ],
+  title: 'ADMIN.NAV.QUOTE_ORDERS',
+  route: '/orders',
+  queryParams: {
+    OrderDirection: 'Incoming',
+    IsSubmitted: 'false',
+    'xp.OrderType': 'Quote',
+    'xp.QuoteStatus': 'NeedsSellerReview',
+  },
+}
+
 const RequiringAttentionOrders: HSRoute = {
   rolesWithAccess: [
     HSRoles.HSOrderAdmin,
@@ -106,7 +108,12 @@ const SellerOrderNavGrouping: HSRoute = {
   title: 'ADMIN.NAV.ORDERS',
   route: '/orders',
   orderCloudUserTypesWithAccess: [SELLER],
-  subRoutes: [BuyerOrders, SupplierPurchaseOrders, RequiringAttentionOrders],
+  subRoutes: [
+    BuyerOrders,
+    SupplierPurchaseOrders,
+    QuoteOrders,
+    RequiringAttentionOrders,
+  ],
 }
 
 const SupplierOrderBatchUpload: HSRoute = {
@@ -128,7 +135,17 @@ const SupplierOrderNavGrouping: HSRoute = {
   title: 'ADMIN.NAV.ORDERS',
   route: '/orders',
   orderCloudUserTypesWithAccess: [SUPPLIER],
-  subRoutes: [Orders, SupplierOrderBatchUpload],
+  subRoutes: [Orders, QuoteOrders, SupplierOrderBatchUpload],
+}
+
+const RMAs: HSRoute = {
+  rolesWithAccess: [
+    HSRoles.HSOrderAdmin,
+    HSRoles.HSOrderReader,
+    HSRoles.HSShipmentAdmin,
+  ],
+  title: 'ADMIN.NAV.RMAS',
+  route: '/rmas',
 }
 
 // Buyers
@@ -148,12 +165,6 @@ const BuyerPurchasingLocations: HSRoute = {
   rolesWithAccess: [HSRoles.HSBuyerAdmin, HSRoles.HSBuyerReader],
   title: 'ALIAS.BUYER_LOCATIONS',
   route: `/buyers/${REDIRECT_TO_FIRST_PARENT}/locations`,
-}
-
-const BuyerApprovalRules: HSRoute = {
-  rolesWithAccess: [HSRoles.HSBuyerAdmin, HSRoles.HSBuyerReader],
-  title: 'ADMIN.NAV.APPROVAL_RULES',
-  route: `/buyers/${REDIRECT_TO_FIRST_PARENT}/approvals`,
 }
 
 const BuyerCatalogs: HSRoute = {
@@ -176,7 +187,6 @@ const BuyerNavGrouping = {
     AllBuyers,
     BuyerUsers,
     BuyerPurchasingLocations,
-    BuyerApprovalRules,
     BuyerCatalogs,
     BuyerCategories,
   ],
@@ -208,25 +218,24 @@ const SupplierNavGrouping: HSRoute = {
   subRoutes: [AllSuppliers, SupplierUsers, SupplierLocations],
 }
 
-/** https://four51.atlassian.net/browse/HDS-319 Reimplement once feature is stable */
-// const ProcessReports = {
-//   rolesWithAccess: [HSRoles.HSReportReader],
-//   title: 'ADMIN.NAV.PROCESS_REPORTS',
-//   route: 'reports/reports',
-// }
+const ProcessReports = {
+  rolesWithAccess: [HSRoles.HSReportReader],
+  title: 'ADMIN.NAV.PROCESS_REPORTS',
+  route: 'reports/reports',
+}
 
-// const ReportTemplates = {
-//   rolesWithAccess: [HSRoles.HSReportAdmin],
-//   title: 'ADMIN.NAV.REPORT_TEMPLATES',
-//   route: `reports/${REDIRECT_TO_FIRST_PARENT}/templates`,
-// }
+const ReportTemplates = {
+  rolesWithAccess: [HSRoles.HSReportAdmin],
+  title: 'ADMIN.NAV.REPORT_TEMPLATES',
+  route: `reports/${REDIRECT_TO_FIRST_PARENT}/templates`,
+}
 
-// const ReportsNavGrouping = {
-//   rolesWithAccess: [HSRoles.HSReportAdmin, HSRoles.HSReportReader],
-//   title: 'ADMIN.NAV.REPORTS',
-//   route: '/reports',
-//   subRoutes: [ProcessReports, ReportTemplates],
-// }
+const ReportsNavGrouping = {
+  rolesWithAccess: [HSRoles.HSReportAdmin, HSRoles.HSReportReader],
+  title: 'ADMIN.NAV.REPORTS',
+  route: '/reports',
+  subRoutes: [ProcessReports, ReportTemplates],
+}
 
 //Seller Admin
 const SellerUsers = {
@@ -250,21 +259,15 @@ const SellerNavGrouping: HSRoute = {
 
 const AllStorefronts = {
   rolesWithAccess: [HSRoles.HSStorefrontAdmin],
-  title: 'All Storefronts',
+  title: 'ADMIN.NAV.ALL_STOREFRONTS',
   route: '/storefronts',
-}
-
-const Pages = {
-  rolesWithAccess: [HSRoles.HSStorefrontAdmin],
-  title: 'Pages',
-  route: `/storefronts/${REDIRECT_TO_FIRST_PARENT}/pages`,
 }
 
 const StorefrontNavGrouping = {
   rolesWithAccess: [HSRoles.HSStorefrontAdmin],
-  title: 'Storefronts',
+  title: 'ADMIN.NAV.STOREFRONTS',
   route: '/storefronts',
-  subRoutes: [AllStorefronts, Pages],
+  subRoutes: [AllStorefronts],
 }
 
 const MySupplierProfile = {
@@ -288,7 +291,7 @@ const MySupplerUsers = {
 const Support = {
   rolesWithAccess: [],
   orderCloudUserTypesWithAccess: [SUPPLIER, SELLER],
-  title: 'Submit a Case',
+  title: 'ADMIN.NAV.SUBMIT_CASE',
   route: '/support',
 }
 
@@ -296,9 +299,10 @@ const AllNavGroupings: HSRoute[] = [
   ProductNavGrouping,
   SupplierOrderNavGrouping,
   SellerOrderNavGrouping,
+  RMAs,
   BuyerNavGrouping,
   SupplierNavGrouping,
-  // ReportsNavGrouping,
+  ReportsNavGrouping,
   SellerNavGrouping,
   StorefrontNavGrouping,
   MySupplierProfile,

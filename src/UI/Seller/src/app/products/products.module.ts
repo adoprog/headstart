@@ -12,10 +12,15 @@ import { ProductFilters } from './components/product-filters/product-filters.com
 import { ProductPricingComponent } from './components/product-pricing/product-pricing.component'
 import { PriceBreakEditor } from './components/price-break-editor/price-break-editor.component'
 import {
-  NgbTabset,
+  NgbDateAdapter,
+  NgbDateNativeAdapter,
   NgbModule,
   NgbTooltipModule,
 } from '@ng-bootstrap/ng-bootstrap'
+import { PriceDisplayComponent } from './components/price-display/price-display.component'
+import { ProductBundleEditComponent } from './components/product-bundle-edit/product-bundle-edit.component';
+import { ProductImageUploadComponent } from './components/product-image-upload/product-image-upload.component';
+import { ProductDocumentUploadComponent } from './components/product-document-upload/product-document-upload.component'
 
 @NgModule({
   imports: [
@@ -25,6 +30,7 @@ import {
     NgbModule,
     NgbTooltipModule,
   ],
+  providers: [{ provide: NgbDateAdapter, useClass: NgbDateNativeAdapter }],
   declarations: [
     ProductTableComponent,
     ProductEditComponent,
@@ -34,6 +40,10 @@ import {
     ProductTaxCodeSelectDropdown,
     ProductVariations,
     ProductFilters,
+    PriceDisplayComponent,
+    ProductBundleEditComponent,
+    ProductImageUploadComponent,
+    ProductDocumentUploadComponent,
   ],
 })
 export class ProductsModule {}

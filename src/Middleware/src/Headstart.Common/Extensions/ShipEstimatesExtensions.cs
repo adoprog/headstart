@@ -1,11 +1,10 @@
-using Headstart.Common.Constants;
-using Headstart.Common.Services.ShippingIntegration.Models;
-using Headstart.Models.Headstart;
-using ordercloud.integrations.exchangerates;
-using OrderCloud.SDK;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Headstart.Common.Constants;
+using Headstart.Common.Models;
+using Headstart.Common.Services;
+using OrderCloud.SDK;
 
 namespace Headstart.Common.Extensions
 {
@@ -15,7 +14,6 @@ namespace Headstart.Common.Extensions
         {
             // if there are no rates for a set of line items then return a mocked response so user can check out
             // this order will additionally get marked as needing attention
-
             foreach (var shipEstimate in estimates)
             {
                 if (!shipEstimate.ShipMethods.Any())
@@ -25,36 +23,39 @@ namespace Headstart.Common.Extensions
                         new HSShipMethod
                         {
                             ID = ShippingConstants.NoRatesID,
-                            Name = "No shipping rates",
+                            Name = string.Empty,
                             Cost = noRatesCost,
                             EstimatedTransitDays = noRatesTransitDays,
                             xp = new ShipMethodXP
                             {
-                                OriginalCost = noRatesCost
-                            }
-                        }
+                                OriginalCost = noRatesCost,
+                                ServiceName = "No shipping rates",
+                            },
+                        },
                     };
                 }
             }
+
             return estimates;
         }
 
-        public static async Task<IList<HSShipEstimate>> ApplyShippingLogic(this IList<HSShipEstimate> shipEstimates, HSOrderWorksheet orderWorksheet, IOrderCloudClient _oc, int freeShippingTransitDays)
+        public static async Task<IList<HSShipEstimate>> ApplyShippingLogic(this IList<HSShipEstimate> shipEstimates, HSOrderWorksheet orderWorksheet, IOrderCloudClient oc, int freeShippingTransitDays)
         {
             var updatedEstimates = new List<HSShipEstimate>();
             var supplierIDs = orderWorksheet.LineItems.Select(li => li.SupplierID);
-            var suppliers = await _oc.Suppliers.ListAsync<HSSupplier>(filters: $"ID={string.Join("|", supplierIDs)}");
-            
+            var suppliers = await oc.Suppliers.ListAsync<HSSupplier>(filters: $"ID={string.Join("|", supplierIDs)}");
+
             foreach (var shipEstimate in shipEstimates)
             {
-                var supplierID = orderWorksheet.LineItems.FirstOrDefault(li => li.ID == shipEstimate.ShipEstimateItems.FirstOrDefault()?.LineItemID)?.SupplierID;
-                var supplier = suppliers.Items.FirstOrDefault(s => s.ID == supplierID);
-                var supplierLineItems = orderWorksheet.GetBuyerLineItemsBySupplierID(supplier?.ID);
-                var supplierSubTotal = supplierLineItems?.Select(li => li.LineSubtotal).Sum();
+                // var supplierID = orderWorksheet.LineItems.FirstOrDefault(li => li.ID == shipEstimate.ShipEstimateItems.FirstOrDefault()?.LineItemID)?.SupplierID;
+                // var supplier = suppliers.Items.FirstOrDefault(s => s.ID == supplierID);
+                // var supplierLineItems = orderWorksheet.GetBuyerLineItemsBySupplierID(supplier?.ID);
+                // var supplierSubTotal = supplierLineItems?.Select(li => li.LineSubtotal).Sum();
+
                 // TODO: Still waiting on decision makers to decide if we want
                 // Shipping Cost Schedules in HeadStart
 
-                //var validCostBreaks = supplier?.xp?.ShippingCostSchedule?.CostBreaks?.Where(costBreak => costBreak.OrderSubTotal < supplierSubTotal);
+                // var validCostBreaks = supplier?.xp?.ShippingCostSchedule?.CostBreaks?.Where(costBreak => costBreak.OrderSubTotal < supplierSubTotal);
 
                 // Update Free Shipping Rates
                 if (shipEstimate.ID.StartsWith(ShippingConstants.FreeShippingID))
@@ -64,42 +65,37 @@ namespace Headstart.Common.Extensions
                         method.ID = shipEstimate.ID;
                         method.Cost = 0;
                         method.EstimatedTransitDays = freeShippingTransitDays;
-                    }
-                }
-
-                foreach (var method in shipEstimate.ShipMethods)
-                {
-                    // Apply Free Shipping on orders where we weren't able to calculate a shipping rate
-                    if (method.ID == ShippingConstants.NoRatesID)
-                    {
                         method.xp.FreeShippingApplied = true;
-                        method.xp.FreeShippingThreshold = supplier?.xp?.FreeShippingThreshold;
-                        method.Cost = 0;
                     }
-                    // TODO: Still waiting on decision makers to decide if we want
-                    // Shipping Cost Schedules in HeadStart
-
-                    // If valid Cost Breaks exist, apply them
-                    //if (validCostBreaks != null)
-                    //{
-                    //    // Apply the Supplier Shipping Cost Schedule to Ground Rates only
-                    //    if (method.Name.Contains("GROUND"))
-                    //    {
-                    //        validCostBreaks = validCostBreaks.Where(cb => cb.ValidCountries.Contains(orderWorksheet?.Order?.FromUser?.xp?.Country));
-                    //        if (validCostBreaks != null && validCostBreaks.Count() > 0)
-                    //        {
-                    //            var sortedValidCostBreaks = validCostBreaks.OrderBy(costBreak => costBreak.OrderSubTotal);
-                    //            method.xp.ShippingCostScheduleOrderSubTotalThreshold = sortedValidCostBreaks.LastOrDefault().OrderSubTotal;
-                    //            method.xp.ShippingCostScheduleApplied = true;
-                    //            method.Cost = sortedValidCostBreaks.LastOrDefault().Cost;
-                    //            if (method.Cost == 0) // If cost = 0, then shipping is considered free
-                    //            {
-                    //                method.xp.FreeShippingApplied = true;
-                    //            }
-                    //        }
-                    //    }
-                    //}
                 }
+
+                // TODO: Still waiting on decision makers to decide if we want
+                // Shipping Cost Schedules in HeadStart
+
+                // foreach (var method in shipEstimate.ShipMethods)
+                // {
+
+                // // If valid Cost Breaks exist, apply them
+                //    if (validCostBreaks != null)
+                //    {
+                //        // Apply the Supplier Shipping Cost Schedule to Ground Rates only
+                //        if (method.Name.Contains("GROUND"))
+                //        {
+                //            validCostBreaks = validCostBreaks.Where(cb => cb.ValidCountries.Contains(orderWorksheet?.Order?.FromUser?.xp?.Country));
+                //            if (validCostBreaks != null && validCostBreaks.Count() > 0)
+                //            {
+                //                var sortedValidCostBreaks = validCostBreaks.OrderBy(costBreak => costBreak.OrderSubTotal);
+                //                method.xp.ShippingCostScheduleOrderSubTotalThreshold = sortedValidCostBreaks.LastOrDefault().OrderSubTotal;
+                //                method.xp.ShippingCostScheduleApplied = true;
+                //                method.Cost = sortedValidCostBreaks.LastOrDefault().Cost;
+                //                if (method.Cost == 0) // If cost = 0, then shipping is considered free
+                //                {
+                //                    method.xp.FreeShippingApplied = true;
+                //                }
+                //            }
+                //        }
+                //    }
+                // }
                 updatedEstimates.Add(shipEstimate);
             }
 
@@ -107,12 +103,16 @@ namespace Headstart.Common.Extensions
             updatedEstimates = shipEstimates.Select(estimate => FilterDownFedexShippingRates(estimate)).ToList();
             return updatedEstimates;
         }
-        public static async Task<IList<HSShipEstimate>> ConvertCurrency(this IList<HSShipEstimate> shipEstimates, CurrencySymbol shipperCurrency, CurrencySymbol buyerCurrency, IExchangeRatesCommand _exchangeRates)
+
+        public static async Task<IList<HSShipEstimate>> ConvertCurrency(this IList<HSShipEstimate> shipEstimates, CurrencyCode shipperCurrency, CurrencyCode buyerCurrency, ICurrencyConversionService currencyConversionService)
         {
             // If the Buyer's currency is USD, do not convert rates.
-            if (buyerCurrency == CurrencySymbol.USD) { return shipEstimates; };
+            if (buyerCurrency == CurrencyCode.USD)
+            {
+                return shipEstimates;
+            }
 
-            var rates = (await _exchangeRates.Get(buyerCurrency)).Rates;
+            var rates = (await currencyConversionService.Get(buyerCurrency)).Rates;
             var conversionRate = rates.Find(r => r.Currency == shipperCurrency).Rate;
             return shipEstimates.Select(estimate =>
             {
@@ -121,19 +121,29 @@ namespace Headstart.Common.Extensions
                     method.xp.OriginalCurrency = shipperCurrency;
                     method.xp.OrderCurrency = buyerCurrency;
                     method.xp.ExchangeRate = conversionRate;
-                    if (conversionRate != null) method.Cost /= (decimal)conversionRate;
+                    if (conversionRate != null)
+                    {
+                        method.Cost /= (decimal)conversionRate;
+                    }
+
                     return method;
                 }).ToList();
                 return estimate;
             }).ToList();
         }
 
-        #region Helper Methods
         public static HSShipEstimate FilterDownFedexShippingRates(HSShipEstimate estimate)
         {
-            estimate.ShipMethods = estimate.ShipMethods.Where(method => (method.ID != null && method.ID.Contains("FREE_SHIPPING")) || method?.ID == ShippingConstants.NoRatesID || method?.xp?.Carrier == "USPS" || method.Name == "FEDEX_GROUND" || method.Name == "FEDEX_2_DAY" || method.Name == "STANDARD_OVERNIGHT").ToList();
+            estimate.ShipMethods =
+                estimate.ShipMethods.Where(method =>
+                    (method.ID != null && method.ID.Contains("FREE_SHIPPING"))
+                    || method?.ID == ShippingConstants.NoRatesID
+                    || method?.xp?.Carrier == "USPS"
+                    || method?.xp?.ServiceName == "FEDEX_GROUND"
+                    || method?.xp?.ServiceName == "FEDEX_2_DAY"
+                    || method?.xp?.ServiceName == "STANDARD_OVERNIGHT").ToList();
+
             return estimate;
         }
-        #endregion
     }
 }

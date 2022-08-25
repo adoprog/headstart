@@ -2,14 +2,14 @@ import { Component, Input, Inject } from '@angular/core'
 import { OrderService } from '@app-seller/orders/order.service'
 import {
   Address,
-  OcLineItemService,
-  OcPaymentService,
+  LineItems,
+  Payments,
   Order,
   Payment,
-  OcOrderService,
+  Orders,
   OrderDirection,
-  OcAddressService,
-} from '@ordercloud/angular-sdk'
+  Addresses,
+} from 'ordercloud-javascript-sdk'
 
 // temporarily any with sdk update
 // import { ProductImage } from '@ordercloud/headstart-sdk';
@@ -25,17 +25,36 @@ import { MiddlewareAPIService } from '@app-seller/shared/services/middleware-api
 import { applicationConfiguration } from '@app-seller/config/app.config'
 import { AppAuthService } from '@app-seller/auth/services/app-auth.service'
 import { ReturnReason } from '@app-seller/shared/models/return-reason.interface'
-import { HSLineItem, HSOrder } from '@ordercloud/headstart-sdk'
+import {
+  HSLineItem,
+  HSOrder,
+  RMA,
+  HeadStartSDK,
+} from '@ordercloud/headstart-sdk'
 import { flatten as _flatten } from 'lodash'
-import { OrderProgress } from '@app-seller/models/order.types'
+import { OrderProgress, OrderType } from '@app-seller/models/order.types'
 import { AppConfig } from '@app-seller/models/environment.types'
 import { SELLER } from '@app-seller/models/user.types'
+import { RMAService } from '@app-seller/rmas/rmas.service'
+import { SupportedRates } from '@app-seller/shared'
+import { FormControl, FormGroup } from '@angular/forms'
+import { CurrentUserService } from '@app-seller/shared/services/current-user/current-user.service'
 
-export const LineItemTableStatus = {
+export type LineItemTableValue =
+  | 'Default'
+  | 'Canceled'
+  | 'Returned'
+  | 'Backordered'
+
+interface ILineItemTableStatus {
+  [key: string]: LineItemTableValue
+}
+
+export const LineItemTableStatus: ILineItemTableStatus = {
   Default: 'Default',
   Canceled: 'Canceled',
   Returned: 'Returned',
-  Backorered: 'Backorered',
+  Backordered: 'Backordered',
 }
 
 @Component({
@@ -59,8 +78,13 @@ export class OrderDetailsComponent {
   orderDirection: OrderDirection
   cardType: string
   createShipment: boolean
+  exchangeRates: SupportedRates[]
+  supplierCurrency: SupportedRates
+  quotePricingForm: FormGroup
   isSellerUser = false
   isSaving = false
+  isSettingQuotePrice = false
+  quotedPrice = 0
   orderProgress: OrderProgress = {
     StatusDisplay: 'Processing',
     Value: 25,
@@ -69,6 +93,7 @@ export class OrderDetailsComponent {
     Animated: false,
   }
   orderAvatarInitials: string
+  rmas: RMA[]
 
   @Input()
   set order(order: Order) {
@@ -78,14 +103,12 @@ export class OrderDetailsComponent {
     }
   }
   constructor(
-    private ocLineItemService: OcLineItemService,
-    private ocOrderService: OcOrderService,
-    private ocPaymentService: OcPaymentService,
     private orderService: OrderService,
     private pdfService: PDFService,
     private middleware: MiddlewareAPIService,
     private appAuthService: AppAuthService,
-    private ocAddressService: OcAddressService,
+    private rmaService: RMAService,
+    private currentUserService: CurrentUserService,
     @Inject(applicationConfiguration) private appConfig: AppConfig
   ) {
     this.isSellerUser = this.appAuthService.getOrdercloudUserType() === SELLER
@@ -192,11 +215,59 @@ export class OrderDetailsComponent {
     return this.orderService.isSupplierOrder(orderID)
   }
 
+  setQuotePricingForm(): void {
+    this.quotePricingForm = new FormGroup({
+      QuotePrice: new FormControl(this._lineItems[0]?.UnitPrice),
+    })
+  }
+
+  async overrideQuoteUnitPrice(): Promise<void> {
+    const updatedLineItem = await HeadStartSDK.Orders.OverrideQuoteUnitPrice(
+      this._order.ID,
+      this._lineItems[0].ID,
+      this.quotePricingForm.value.QuotePrice
+    )
+    this.quotedPrice = 0 // Initialize, will be set during refreshOrder()
+    await this.refreshOrder()
+    this.isSettingQuotePrice = false
+  }
+
+  getOrderDate(): string {
+    return this.isQuoteOrder(this._order)
+      ? this._order.xp?.QuoteSubmittedDate
+      : this._order.DateSubmitted
+  }
+
+  getQuotePriceButtonText() {
+    return this.isSettingQuotePrice
+      ? 'ADMIN.ORDERS.CANCEL_PRICING'
+      : 'ADMIN.ORDERS.SET_QUOTE_PRICE'
+  }
+
+  toggleSetQuotePrice() {
+    this.isSettingQuotePrice = !this.isSettingQuotePrice
+    this.setQuotePricingForm()
+  }
+
   async setData(order: Order): Promise<void> {
     this._buyerQuoteAddress = null
     this._order = order
-    if (this.isSupplierOrder(order.ID)) {
-      const orderData = await this.middleware.getSupplierData(order.ID)
+    this.exchangeRates = (await HeadStartSDK.ExchangeRates.GetRateList()).Items
+    this.supplierCurrency = this.exchangeRates?.find(
+      (r) => r.Currency === order.xp?.Currency
+    )
+    const currentUser = await this.currentUserService.getUser()
+    const rmaListPage = await this.rmaService.listRMAsByOrderID(order.ID)
+    this.rmas = currentUser.Supplier
+      ? rmaListPage.Items.filter(
+          (rma) => rma.SupplierID === currentUser.Supplier.ID
+        )
+      : rmaListPage.Items
+    if (this.isSupplierOrder(order.ID) || this.isQuoteOrder(order)) {
+      const orderData = await HeadStartSDK.Suppliers.GetSupplierOrder(
+        order.ID,
+        this._order.xp?.OrderType
+      )
       this._buyerOrder = orderData.BuyerOrder.Order
       this._supplierOrder = orderData.SupplierOrder.Order
       this._lineItems = orderData.SupplierOrder.LineItems
@@ -205,11 +276,15 @@ export class OrderDetailsComponent {
       this._lineItems = await this.getAllLineItems(order)
     }
     if (this.isQuoteOrder(order)) {
+      if (order?.xp?.QuoteStatus === 'NeedsBuyerReview') {
+        this.quotedPrice = this._lineItems[0]?.UnitPrice
+      }
       const buyerId = this._buyerOrder.FromCompanyID
       if (this._buyerOrder.ShippingAddressID) {
-        const address = await this.ocAddressService
-          .Get(buyerId, this._buyerOrder.ShippingAddressID)
-          .toPromise()
+        const address = await Addresses.Get(
+          buyerId,
+          this._buyerOrder.ShippingAddressID
+        )
         this._buyerQuoteAddress = address
       }
     }
@@ -234,10 +309,13 @@ export class OrderDetailsComponent {
           1
         ).toUpperCase()}`
     this.setOrderProgress(order)
-    const paymentsResponse = await this.ocPaymentService
-      .List(this.orderDirection, order.ID)
-      .toPromise()
-    this._payments = paymentsResponse.Items
+    if (this._order?.xp?.OrderType != OrderType.Quote) {
+      const paymentsResponse = await Payments.List(
+        this.orderDirection,
+        order.ID
+      )
+      this._payments = paymentsResponse.Items
+    }
   }
 
   private async getAllLineItems(order) {
@@ -246,9 +324,11 @@ export class OrderDetailsComponent {
       page: 1,
       pageSize: 100,
     }
-    const lineItemsResponse = await this.ocLineItemService
-      .List(this.orderDirection, order.ID, listOptions)
-      .toPromise()
+    const lineItemsResponse = await LineItems.List(
+      this.orderDirection,
+      order.ID,
+      listOptions
+    )
     lineItems = [...lineItems, ...(lineItemsResponse.Items as HSLineItem[])]
     if (lineItemsResponse.Meta.TotalPages <= 1) {
       return lineItems
@@ -258,9 +338,7 @@ export class OrderDetailsComponent {
         listOptions.page = page
         lineItemRequests = [
           ...lineItemRequests,
-          this.ocLineItemService
-            .List(this.orderDirection, order.ID, listOptions)
-            .toPromise(),
+          LineItems.List(this.orderDirection, order.ID, listOptions),
         ]
       }
       return await Promise.all(lineItemRequests).then((response) => {
@@ -271,9 +349,12 @@ export class OrderDetailsComponent {
   }
 
   async refreshOrder(): Promise<void> {
-    const order = await this.ocOrderService
-      .Get(this.orderDirection, this._order.ID)
-      .toPromise()
+    let order: HSOrder
+    if (this._order?.xp?.OrderType === OrderType.Quote) {
+      order = await HeadStartSDK.Orders.GetQuoteOrder(this._order.ID)
+    } else {
+      order = await Orders.Get(this.orderDirection, this._order.ID)
+    }
     this.handleSelectedOrderChange(order)
   }
 
@@ -283,5 +364,9 @@ export class OrderDetailsComponent {
 
   protected createAndSavePDF(): void {
     this.pdfService.createAndSavePDF(this._order.ID)
+  }
+
+  buildOrderDetailsRoute(rma: RMA): string {
+    return `/rmas/${rma.RMANumber}`
   }
 }

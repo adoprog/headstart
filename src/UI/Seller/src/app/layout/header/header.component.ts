@@ -10,12 +10,14 @@ import {
   faUserCircle,
   faEnvelope,
 } from '@fortawesome/free-solid-svg-icons'
-import { MeUser, OcTokenService } from '@ordercloud/angular-sdk'
+import { MeUser, Tokens } from 'ordercloud-javascript-sdk'
 import { Router, NavigationEnd } from '@angular/router'
 import { AppConfig, AppStateService, HSRoute } from '@app-seller/shared'
 import { getHeaderConfig } from './header.config'
 import { AppAuthService } from '@app-seller/auth/services/app-auth.service'
 import { CurrentUserService } from '@app-seller/shared/services/current-user/current-user.service'
+import { TranslateService } from '@ngx-translate/core'
+import { LanguageSelectorService } from '@app-seller/shared'
 
 @Component({
   selector: 'layout-header',
@@ -39,13 +41,16 @@ export class HeaderComponent implements OnInit {
   headerConfig: HSRoute[]
   hasProfileImg = false
   currentUserInitials: string
+  selectedLanguage: string
+  languages: string[]
 
   constructor(
-    private ocTokenService: OcTokenService,
     private router: Router,
     private appStateService: AppStateService,
     private appAuthService: AppAuthService,
     private currentUserService: CurrentUserService,
+    private translate: TranslateService,
+    private languageService: LanguageSelectorService,
     @Inject(applicationConfiguration) protected appConfig: AppConfig
   ) {
     this.setUpSubs()
@@ -59,18 +64,23 @@ export class HeaderComponent implements OnInit {
     await this.getCurrentUser()
     this.setCurrentUserInitials(this.user)
     this.urlChange(this.router.url)
+    this.languages = this.translate.getLangs()
+    this.selectedLanguage = this.translate.currentLang
+    this.translate.onLangChange.subscribe((event) => {
+      this.selectedLanguage = event.lang
+    })
   }
 
-  async getCurrentUser() {
+  async getCurrentUser(): Promise<void> {
     this.isSupplierUser = await this.currentUserService.isSupplierUser()
     if (this.isSupplierUser) {
       this.getSupplierOrg()
     } else {
-      this.organizationName = this.appConfig.sellerName
+      this.organizationName = this.appConfig.marketplaceName
     }
   }
 
-  async getSupplierOrg() {
+  async getSupplierOrg(): Promise<void> {
     const mySupplier = await this.currentUserService.getMySupplier()
     this.organizationName = mySupplier.Name
   }
@@ -90,7 +100,7 @@ export class HeaderComponent implements OnInit {
     })
   }
 
-  urlChange = (url: string) => {
+  urlChange = (url: string): void => {
     const activeNavGroup = this.headerConfig.find((grouping) => {
       return (
         (url.includes(grouping.route) && grouping.subRoutes) ||
@@ -100,14 +110,19 @@ export class HeaderComponent implements OnInit {
     this.activeTitle = activeNavGroup && activeNavGroup.title
   }
 
-  logout() {
-    this.ocTokenService.RemoveAccess()
+  logout(): void {
+    Tokens.RemoveAccessToken();
     this.appStateService.isLoggedIn.next(false)
     this.router.navigate(['/login'])
   }
 
   toAccount(): void {
     this.router.navigate(['account'])
+  }
+
+  async setLanguage(language: string): Promise<void> {
+    const user = await this.currentUserService.refreshUser()
+    await this.languageService.SetLanguage(language, user)
   }
 
   toNotifications(): void {

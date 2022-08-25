@@ -1,3 +1,4 @@
+import { faBan, faCircle, faClock } from '@fortawesome/free-solid-svg-icons'
 /* eslint-disable max-lines-per-function */
 import { BrowserModule } from '@angular/platform-browser'
 import {
@@ -28,7 +29,6 @@ import { FontAwesomeModule } from '@fortawesome/angular-fontawesome'
 import { NgxImageZoomModule } from 'ngx-image-zoom'
 import { NgxSpinnerModule } from 'ngx-spinner'
 import { OCMCategoryDropdown } from './components/layout/category-dropdown/category-dropdown.component'
-import { CmsBuyerModule } from '@ordercloud/angular-cms-components'
 
 import {
   NgbCarouselModule,
@@ -46,6 +46,7 @@ import { FormControlErrorDirective } from './directives/form-control-errors.dire
 import { CreditCardInputDirective } from './directives/credit-card-input.directive'
 import { ProductNameWithSpecsPipe } from './pipes/product-name-with-specs.pipe'
 import { OrderStatusDisplayPipe } from './pipes/order-status-display.pipe'
+import { SplitByCapitalLetterPipe } from './pipes/split-by-capital-letter.pipe'
 import { PhoneFormatPipe } from './pipes/phone-format.pipe'
 import { ChildCategoryPipe } from './pipes/category-children.pipe'
 import { CreditCardFormatPipe } from './pipes/credit-card-format.pipe'
@@ -58,6 +59,7 @@ import { NgProgressModule } from '@ngx-progressbar/core'
 import { NgProgressHttpModule } from '@ngx-progressbar/http'
 import { OCMOrderApproval } from './components/orders/order-approval/order-approval.component'
 import { OCMOrderShipments } from './components/orders/order-shipments/order-shipments.component'
+import { OCMOrderRMAs } from './components/orders/order-rmas/order-rmas.component'
 import {
   ShipperTrackingPipe,
   ShipperTrackingSupportedPipe,
@@ -138,7 +140,6 @@ import { OCMQuoteRequestForm } from './components/products/quote-request-form/qu
 import { OCMContactSupplierForm } from './components/products/contact-supplier-form/contact-supplier-form.component'
 import { UnitOfMeasurePipe } from './pipes/unit-of-measure.pipe'
 import { OCMLocationListItem } from './components/profile/location-list-item/location-list-item.component'
-import { OCMCertificateForm } from './components/profile/certificate-form/certificate-form.component'
 import { OCMLocationManagement } from './components/profile/location-management/location-management.component'
 import { MatListModule } from '@angular/material/list'
 import { MatButtonModule } from '@angular/material/button'
@@ -149,7 +150,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
 import { OCMBuyerLocationPermissions } from './components/profile/buyer-location-permissions/buyer-location-permissions'
 import { OCMOrderAccessManagement } from './components/profile/order-approval-permissions/order-approval-permissions.component'
 import { SafeHTMLPipe } from './pipes/safe-html.pipe'
-import { OCMStaticPage } from './components/layout/static-page/static-page.component'
 import { OCMProductAttachments } from './components/products/product-attachments/product-attachments.component'
 import { CartWrapperComponent } from './wrapper-components/cart-wrapper.component'
 import { CheckoutWrapperComponent } from './wrapper-components/checkout-wrapper.component'
@@ -158,7 +158,6 @@ import { LocationListWrapperComponent } from './wrapper-components/location-list
 import { LocationManagementWrapperComponent } from './wrapper-components/location-management-wrapper.component'
 import { ForgotPasswordWrapperComponent } from './wrapper-components/forgot-password-wrapper.component'
 import { HomeWrapperComponent } from './wrapper-components/home-wrapper.component'
-import { StaticPageWrapperComponent } from './wrapper-components/static-page-wrapper.component'
 import { LoginWrapperComponent } from './wrapper-components/login-wrapper.component'
 import { MeChangePasswordWrapperComponent } from './wrapper-components/me-change-password-wrapper.component'
 import { PaymentListWrapperComponent } from './wrapper-components/payment-list-wrapper.component'
@@ -171,7 +170,7 @@ import { OrderDetailWrapperComponent } from './wrapper-components/order-detail-w
 import { OrderHistoryWrapperComponent } from './wrapper-components/order-history-wrapper-component'
 import { SupplierListWrapperComponent } from './wrapper-components/supplier-list-wrapper.component'
 import { Configuration, SdkConfiguration } from 'ordercloud-javascript-sdk'
-import { Configuration as MktpConfiguration } from '@ordercloud/headstart-sdk'
+import { Configuration as HeadstartConfiguration } from '@ordercloud/headstart-sdk'
 import {
   MeListAddressResolver,
   MeListBuyerLocationResolver,
@@ -195,10 +194,19 @@ import { RouteService } from './services/route/route.service'
 import { ShopperContextService } from './services/shopper-context/shopper-context.service'
 import { TempSdk } from './services/temp-sdk/temp-sdk.service'
 import { TokenHelperService } from './services/token-helper/token-helper.service'
-import { CMSConfiguration } from '@ordercloud/cms-sdk'
 import { AppConfig } from './models/environment.types'
 import { BaseResolveService } from './services/base-resolve/base-resolve.service'
-import { ShipMethodNameMapperPipe } from './pipes/ship-method-name/ship-method-name.pipe'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import {
+  faCcAmex,
+  faCcDiscover,
+  faCcMastercard,
+  faCcVisa,
+} from '@fortawesome/free-brands-svg-icons'
+import { faCreditCard } from '@fortawesome/free-solid-svg-icons'
+import { ProductPriceDisplayComponent } from './components/products/product-price-display/product-price-display.component'
+import { LanguageSelectorService } from 'src/app/services/language-selector/language-selector.service'
+import { RmaReturnReasonPipe } from './pipes/rma-return-reason.pipe'
 
 export function HttpLoaderFactory(
   http: HttpClient,
@@ -216,7 +224,6 @@ const components = [
   LocationManagementWrapperComponent,
   ForgotPasswordWrapperComponent,
   HomeWrapperComponent,
-  StaticPageWrapperComponent,
   LoginWrapperComponent,
   MeChangePasswordWrapperComponent,
   PaymentListWrapperComponent,
@@ -242,7 +249,6 @@ const components = [
   OCMLineitemTable,
   OCMCart,
   OCMHomePage,
-  OCMStaticPage,
   OCMProductSort,
   OCMSupplierSort,
   OCMSupplierCard,
@@ -288,6 +294,7 @@ const components = [
   OCMAppFooter,
   OCMOrderApproval,
   OCMOrderShipments,
+  OCMOrderRMAs,
   OCMOrderAccessManagement,
   OCMOrderHistorical,
   OCMOrderHistory,
@@ -309,8 +316,8 @@ const components = [
   OCMPaymentCreditCard,
   OCMLocationListItem,
   OCMLocationManagement,
-  OCMCertificateForm,
   OCMProductAttachments,
+  ProductPriceDisplayComponent,
 ]
 
 // @dynamic
@@ -322,8 +329,9 @@ const components = [
     CreditCardInputDirective,
     SpecFieldDirective,
     ProductNameWithSpecsPipe,
-    ShipMethodNameMapperPipe,
+    RmaReturnReasonPipe,
     OrderStatusDisplayPipe,
+    SplitByCapitalLetterPipe,
     PhoneFormatPipe,
     ChildCategoryPipe,
     CreditCardFormatPipe,
@@ -335,7 +343,6 @@ const components = [
     ...components,
   ],
   imports: [
-    CmsBuyerModule,
     BrowserModule,
     AppRoutingModule,
     HttpClientModule,
@@ -409,20 +416,38 @@ export class AppModule {
     private injector: Injector,
     @Inject(PLATFORM_ID) private platformId: any,
     public translate: TranslateService,
-    private appConfig: AppConfig
+    private appConfig: AppConfig,
+    private languageService: LanguageSelectorService
   ) {
-    MktpConfiguration.Set({
+    HeadstartConfiguration.Set({
       baseApiUrl: this.appConfig.middlewareUrl,
+      orderCloudApiUrl: this.appConfig.orderCloudApiUrl,
+      clientID: this.appConfig.clientID,
+      cookieOptions: {
+        prefix: `${this.appConfig.appID}buyer`.toLowerCase(),
+      },
     })
-    if(this.appConfig.cmsUrl && this.appConfig.cmsUrl !== '') {
-      CMSConfiguration.Set({
-        baseApiUrl: this.appConfig?.cmsUrl,
-      })
-    }
-    Configuration.Set(this.getOrdercloudSDKConfig(appConfig))
-    translate.setDefaultLang('en')
-    translate.use('en')
 
+    Configuration.Set({
+      baseApiUrl: this.appConfig.orderCloudApiUrl,
+      clientID: this.appConfig.clientID,
+      cookieOptions: {
+        prefix: `${this.appConfig.appID}buyer`.toLowerCase(),
+      },
+    })
+    
+    this.configureTranslationService()
+
+    library.add(
+      faCcDiscover,
+      faCcMastercard,
+      faCcVisa,
+      faCreditCard,
+      faCcAmex,
+      faCircle,
+      faClock,
+      faBan
+    )
     this.buildWebComponent(OCMProfileNav, 'ocm-profile-nav')
     this.buildWebComponent(OCMQuantityInput, 'ocm-quantity-input')
     this.buildWebComponent(OCMProductCard, 'ocm-product-card')
@@ -437,7 +462,6 @@ export class AppModule {
     this.buildWebComponent(OCMProductAttachments, 'ocm-product-attachments')
     this.buildWebComponent(OCMCart, 'ocm-cart')
     this.buildWebComponent(OCMHomePage, 'ocm-home-page')
-    this.buildWebComponent(OCMStaticPage, 'ocm-static-page')
     this.buildWebComponent(OCMProductSort, 'ocm-product-sort')
     this.buildWebComponent(OCMSupplierSort, 'ocm-supplier-sort')
     this.buildWebComponent(OCMSupplierCard, 'ocm-supplier-card')
@@ -497,6 +521,7 @@ export class AppModule {
     this.buildWebComponent(OCMAppFooter, 'ocm-app-footer')
     this.buildWebComponent(OCMOrderApproval, 'ocm-order-approval')
     this.buildWebComponent(OCMOrderShipments, 'ocm-order-shipments')
+    this.buildWebComponent(OCMOrderRMAs, 'ocm-order-rmas')
     this.buildWebComponent(OCMOrderHistorical, 'ocm-order-historical')
     this.buildWebComponent(OCMOrderHistory, 'ocm-order-history')
     this.buildWebComponent(OCMOrderReturn, 'ocm-order-return')
@@ -514,17 +539,23 @@ export class AppModule {
     this.buildWebComponent(ConfirmModal, 'confirm-modal')
     this.buildWebComponent(OCMLocationListItem, 'ocm-location-list-item')
     this.buildWebComponent(OCMLocationManagement, 'ocm-location-management')
-    this.buildWebComponent(OCMCertificateForm, 'ocm-certificate-form')
   }
 
-  private getOrdercloudSDKConfig(config: AppConfig): SdkConfiguration {
-    return {
-      baseApiUrl: config.orderCloudApiUrl,
-      clientID: config.clientID,
-      cookieOptions: {
-        prefix: `${config.appID}buyer`.toLowerCase(),
-      },
+  configureTranslationService(): void {
+    if (this.appConfig.supportedLanguages && this.appConfig.supportedLanguages.length === 0){
+      throw new Error('supportedLanguages not defined in appConfig.')
     }
+    this.translate.addLangs(this.appConfig.supportedLanguages)
+    const languages = this.translate.getLangs()
+
+    if (!this.appConfig.defaultLanguage) {
+      throw new Error('defaultLanguage not defined in appConfig.')
+    }
+    if (languages.includes(this.appConfig.defaultLanguage)) {
+      this.translate.setDefaultLang(this.appConfig.defaultLanguage)
+    }
+
+    this.languageService.SetTranslateLanguage()
   }
 
   buildWebComponent(angularComponent: any, htmlTagName: string): void {

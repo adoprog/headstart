@@ -6,11 +6,11 @@ import { HttpClient, HttpHeaders } from '@angular/common/http'
 import { Inject, Injectable } from '@angular/core'
 import { applicationConfiguration } from '@app-seller/config/app.config'
 import { AppConfig } from '@app-seller/models/environment.types'
-import { OcTokenService, Order } from '@ordercloud/angular-sdk'
+import { OrderType } from '@app-seller/shared'
+import { Tokens, Order } from 'ordercloud-javascript-sdk'
 import {
   ListPage,
   BatchProcessResult,
-  SupplierFilterConfigDocument,
   SuperHSShipment,
   HSSupplier,
 } from '@ordercloud/headstart-sdk'
@@ -23,11 +23,10 @@ import { Observable } from 'rxjs'
 export class MiddlewareAPIService {
   readonly headers = {
     headers: new HttpHeaders({
-      Authorization: `Bearer ${this.ocTokenService.GetAccess()}`,
+      Authorization: `Bearer ${Tokens.GetAccessToken()}`,
     }),
   }
   constructor(
-    private ocTokenService: OcTokenService,
     private http: HttpClient,
     @Inject(applicationConfiguration) private appConfig: AppConfig
   ) {}
@@ -42,20 +41,21 @@ export class MiddlewareAPIService {
     supplier: HSSupplier
   ): Promise<HSSupplier> {
     const url = `${this.appConfig.middlewareUrl}/supplier/${supplierID}`
-    return await this.http.patch(url, supplier, this.headers).toPromise()
-  }
-
-  async getSupplierFilterConfig(): Promise<
-    ListPage<SupplierFilterConfigDocument>
-  > {
-    const url = `${this.appConfig.middlewareUrl}/supplierfilterconfig`
     return await this.http
-      .get<ListPage<SupplierFilterConfigDocument>>(url, this.headers)
+      .patch<HSSupplier>(url, supplier, this.headers)
       .toPromise()
   }
 
-  async getSupplierData(supplierOrderID: string): Promise<any> {
-    const url = `${this.appConfig.middlewareUrl}/supplier/orderdetails/${supplierOrderID}`
+  async getSupplierFilterConfig(): Promise<ListPage<any>> {
+    const url = `${this.appConfig.middlewareUrl}/supplierfilterconfig`
+    return await this.http.get<ListPage<any>>(url, this.headers).toPromise()
+  }
+
+  async getSupplierData(
+    supplierOrderID: string,
+    orderType: OrderType
+  ): Promise<any> {
+    const url = `${this.appConfig.middlewareUrl}/supplier/orderdetails/${supplierOrderID}/${orderType}`
     return await this.http.get<any>(url, this.headers).toPromise()
   }
 

@@ -17,6 +17,16 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
+            "allowedCommonJsDependencies": [
+              "lodash",
+              "@babel/runtime-corejs3",
+              "@babel/runtime",
+              "axios",
+              "raf",
+              "zone.js/dist/zone-error",
+              "jwt-decode",
+              "core-js-pure"
+            ],
             "outputPath": "dist",
             "index": "src/index.html",
             "main": "src/main.ts",
@@ -32,18 +42,23 @@
             "styles": [
               "src/styles/themes/defaultbuyer/_main.scss"
             ],
-            "scripts": []
+            "scripts": [],
+            "vendorChunk": true,
+            "extractLicenses": false,
+            "buildOptimizer": false,
+            "sourceMap": true,
+            "optimization": false,
+            "namedChunks": true
           },
           "configurations": {
             "dev": {
-              "optimization": false,
               "outputHashing": "all",
               "sourceMap": false,
-              "extractCss": false,
               "namedChunks": false,
               "extractLicenses": true,
               "vendorChunk": false,
-              "budgets": [ {
+              "budgets": [
+                {
                   "type": "initial",
                   "maximumWarning": "2mb",
                   "maximumError": "6mb"
@@ -56,10 +71,12 @@
               ]
             },
             "deploy": {
-              "fileReplacements": [ {
-                "replace": "src/environments/environment.local.ts",
-                "with": "src/environments/environment.deploy.ts"
-              } ],
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.local.ts",
+                  "with": "src/environments/environment.deploy.ts"
+                }
+              ],
               "styles": [
                 {
                   "input": "src/styles/themes/defaultbuyer/_main.scss",
@@ -70,11 +87,11 @@
               "optimization": true,
               "outputHashing": "all",
               "sourceMap": false,
-              "extractCss": true,
               "namedChunks": false,
               "extractLicenses": true,
               "vendorChunk": false,
-              "budgets": [ {
+              "budgets": [
+                {
                   "type": "initial",
                   "maximumWarning": "2mb",
                   "maximumError": "6mb"
@@ -86,7 +103,8 @@
                 }
               ]
             }
-          }
+          },
+          "defaultConfiguration": ""
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",

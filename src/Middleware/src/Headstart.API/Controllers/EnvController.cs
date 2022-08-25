@@ -1,25 +1,26 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace Headstart.Common.Controllers
+namespace Headstart.API.Controllers
 {
     [Route("env")]
     public class EnvController : ControllerBase
     {
-        private readonly AppSettings _settings;
+        private readonly AppSettings settings;
 
-        public EnvController(AppSettings settings) 
+        public EnvController(AppSettings settings)
         {
-            _settings = settings;
+            this.settings = settings;
         }
 
         [HttpGet]
         public object Get()
         {
-            return new { 
-                Environment = _settings.EnvironmentSettings.Environment.ToString(),
-                BuildNumber = _settings.EnvironmentSettings.BuildNumber, // set during deploy
-                Commit = _settings.EnvironmentSettings.Commit, // set during deploy
-                CosmosDatabase = _settings.CosmosSettings.DatabaseName
+            return new
+            {
+                Environment = settings.EnvironmentSettings.Environment.ToString(),
+                BuildNumber = settings.EnvironmentSettings.BuildNumber, // set during deploy
+                Commit = settings.EnvironmentSettings.Commit, // set during deploy
+                CosmosDatabase = settings.CosmosSettings.DatabaseName,
             };
         }
     }

@@ -1,28 +1,28 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using OrderCloud.SDK;
-using System.Threading.Tasks;
-using Headstart.Models.Attributes;
-using ordercloud.integrations.library;
-using Headstart.Common.Services.ShippingIntegration.Models;
-using Microsoft.AspNetCore.Http;
+﻿using System.Threading.Tasks;
 using Headstart.API.Commands;
+using Headstart.Common.Models;
+using Microsoft.AspNetCore.Mvc;
 using OrderCloud.Catalyst;
+using OrderCloud.SDK;
 
 namespace Headstart.Common.Controllers
 {
-    [DocComments("\"Headstart Shipments\" for making shipments in seller app")]
-    [HSSection.Headstart(ListOrder = 2)]
+    /// <summary>
+    /// Shipments.
+    /// </summary>
     [Route("shipment")]
-    public class ShipmentController : BaseController
+    public class ShipmentController : CatalystController
     {
-        
-        private readonly IShipmentCommand _command;
+        private readonly IShipmentCommand shipmentCommand;
+
         public ShipmentController(IShipmentCommand command)
         {
-            _command = command;
+            this.shipmentCommand = command;
         }
 
-        [DocName("POST Headstart Shipment")]
+        /// <summary>
+        /// POST Headstart Shipment.
+        /// </summary>
         // todo update auth
         [HttpPost, OrderCloudUserAuth(ApiRole.ShipmentAdmin)]
         public async Task<SuperHSShipment> Create([FromBody] SuperHSShipment superShipment)
@@ -30,20 +30,17 @@ namespace Headstart.Common.Controllers
             // ocAuth is the token for the organization that is specified in the AppSettings
 
             // todo add auth to make sure suppliers are creating shipments for their own orders
-            return await _command.CreateShipment(superShipment, UserContext);
-        } 
-
-        [DocName("POST Batch Shipment Update")]
-        [Route("batch/uploadshipment")]
-        [HttpPost, OrderCloudUserAuth(ApiRole.ShipmentAdmin)]
-        public async Task<BatchProcessResult> UploadShipments([FromForm] FileUpload fileRequest)
-        {
-            return  await _command.UploadShipments(fileRequest?.File, UserContext);
+            return await shipmentCommand.CreateShipment(superShipment, UserContext);
         }
-    }
 
-    public class FileUpload
-    {
-        public IFormFile File { get; set; }
+        /// <summary>
+        /// POST Batch Shipment Update.
+        /// </summary>
+        [HttpPost, Route("batch/uploadshipment"), OrderCloudUserAuth(ApiRole.ShipmentAdmin)]
+        [ApiExplorerSettings(IgnoreApi = true)]
+        public async Task<BatchProcessResult> UploadShipments([FromForm] FileUploadRequest fileRequest)
+        {
+            return await shipmentCommand.UploadShipments(fileRequest?.File, UserContext);
+        }
     }
 }

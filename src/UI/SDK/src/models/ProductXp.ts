@@ -1,22 +1,19 @@
 import { DocumentAsset, ImageAsset } from './Asset';
-import { TaxProperties } from './TaxProperties';
+import { ProductType } from './ProductType';
+import { TaxCategorization } from './TaxCategorization';
 import { UnitOfMeasure } from './UnitOfMeasure';
 
 export interface ProductXp {
-    Status?: 'Draft' | 'Published'
-    HasVariants?: boolean
     Note?: string
-    Tax?: TaxProperties
+    Tax?: TaxCategorization
     UnitOfMeasure?: UnitOfMeasure
-    ProductType?: 'Standard' | 'Quote' | 'PurchaseOrder' | 'Kit'
+    ProductType?: ProductType
     SizeTier?: 'G' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
-    IsResale?: boolean
-    Accessorials?: 'Freezable' | 'Hazmat' | 'KeepFromFreezing'
     Currency?: 'CAD' | 'HKD' | 'ISK' | 'PHP' | 'DKK' | 'HUF' | 'CZK' | 'GBP' | 'RON' | 'SEK' | 'IDR' | 'INR' | 'BRL' | 'RUB' | 'HRK' | 'JPY' | 'THB' | 'CHF' | 'EUR' | 'MYR' | 'BGN' | 'TRY' | 'CNY' | 'NOK' | 'NZD' | 'ZAR' | 'USD' | 'MXN' | 'SGD' | 'AUD' | 'ILS' | 'KRW' | 'PLN'
-    ArtworkRequired?: boolean
-    PromotionEligible?: boolean
     FreeShipping?: boolean
     FreeShippingMessage?: string
     Images?: ImageAsset[]
     Documents?: DocumentAsset[]
+    RelatedProducts?: string[]
+    BundledProducts?: string[]
 }

@@ -1,50 +1,83 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using OrderCloud.SDK;
-using System.Threading.Tasks;
-using ordercloud.integrations.library;
-using Headstart.Models.Attributes;
-using Headstart.Common.Models;
-using Headstart.Models.Misc;
+﻿using System.Threading.Tasks;
 using Headstart.API.Commands;
+using Headstart.Common.Models;
+using Microsoft.AspNetCore.Mvc;
 using OrderCloud.Catalyst;
+using OrderCloud.Integrations.CosmosDB;
+using OrderCloud.Integrations.RMAs.Commands;
+using OrderCloud.Integrations.RMAs.Models;
+using OrderCloud.SDK;
 
 namespace Headstart.Common.Controllers
 {
-    [DocComments("\"Headstart RMAs\" for managing RMAs in the Headstart application")]
-    [HSSection.Headstart(ListOrder = 12)]
+    /// <summary>
+    /// Returns.
+    /// </summary>
     [Route("rma")]
-    public class RMAController : BaseController
+    public class RMAController : CatalystController
     {
-		private readonly IRMACommand _rmaCommand;
-        private const string HSLocationViewAllOrders = "HSLocationViewAllOrders";
+        private readonly IRMACommand rmaCommand;
+        private readonly ILineItemCommand lineItemCommand;
+        private readonly IOrderCloudClient oc;
 
-        public RMAController(IRMACommand rmaCommand)
+        public RMAController(IRMACommand rmaCommand, ILineItemCommand lineItemCommand, IOrderCloudClient oc)
         {
-            _rmaCommand = rmaCommand;
+            this.rmaCommand = rmaCommand;
+            this.lineItemCommand = lineItemCommand;
+            this.oc = oc;
         }
 
         // Buyer Routes
-        [DocName("POST Headstart RMA")]
+
+        /// <summary>
+        /// POST Headstart RMA.
+        /// </summary>
         [HttpPost, OrderCloudUserAuth(ApiRole.Shopper)]
-        public async Task<RMA> GenerateRMA([FromBody] RMA rma)
+        public async Task<RMA> PostRMA([FromBody] RMA rma)
         {
-            return await _rmaCommand.GenerateRMA(rma, UserContext);
+            return await rmaCommand.PostRMA(rma);
         }
 
-        [DocName("LIST Me Headstart RMAs")]
-        [HttpPost, Route("list/me"), OrderCloudUserAuth(ApiRole.Shopper)]
-        public async Task<CosmosListPage<RMA>> ListMeRMAs([FromBody] CosmosListOptions listOptions)
-        {
-            return await _rmaCommand.ListMeRMAs(listOptions, UserContext);
-        }
-
-        [DocName("LIST Buyer Headstart RMAs")]
-        [HttpPost, Route("list/buyer"), OrderCloudUserAuth(HSLocationViewAllOrders)]
+        [HttpPost, Route("list/buyer"), OrderCloudUserAuth(nameof(CustomRole.HSLocationViewAllOrders))]
         public async Task<CosmosListPage<RMA>> ListBuyerRMAs([FromBody] CosmosListOptions listOptions)
         {
-            return await _rmaCommand.ListBuyerRMAs(listOptions, UserContext);
+            var me = await oc.Me.GetAsync(accessToken: UserContext.AccessToken);
+            return await rmaCommand.ListBuyerRMAs(listOptions, me?.Buyer?.ID);
         }
 
-        // Seller/Supplier Routes (TO-DO)
+        // Seller/Supplier Routes
+        [HttpGet, OrderCloudUserAuth(nameof(CustomRole.HSOrderAdmin), nameof(CustomRole.HSOrderReader), nameof(CustomRole.HSShipmentAdmin))]
+        public async Task<RMA> Get(ListArgs<RMA> args)
+        {
+            return await rmaCommand.Get(args, UserContext);
+        }
+
+        [HttpGet, Route("{orderID}"), OrderCloudUserAuth(nameof(CustomRole.HSOrderAdmin), nameof(CustomRole.HSOrderReader), nameof(CustomRole.HSShipmentAdmin))]
+        public async Task<CosmosListPage<RMA>> ListRMAsByOrderID(string orderID, CommerceRole commerceRole, MeUser me, bool accessAllRMAsOnOrder = false)
+        {
+            return await rmaCommand.ListRMAsByOrderID(orderID, commerceRole, me, accessAllRMAsOnOrder);
+        }
+
+        [HttpPost, Route("list"), OrderCloudUserAuth(nameof(CustomRole.HSOrderAdmin), nameof(CustomRole.HSOrderReader), nameof(CustomRole.HSShipmentAdmin))]
+        public async Task<CosmosListPage<RMA>> ListRMAs([FromBody] CosmosListOptions listOptions)
+        {
+            return await rmaCommand.ListRMAs(listOptions, UserContext);
+        }
+
+        [HttpPut, Route("process-rma"), OrderCloudUserAuth(ApiRole.ShipmentAdmin)]
+        public async Task<RMA> ProcessRMA([FromBody] RMA rma)
+        {
+            RMAWithLineItemStatusByQuantity rmaWithLineItemStatusByQuantity = await rmaCommand.ProcessRMA(rma, UserContext);
+            await lineItemCommand.HandleRMALineItemStatusChanges(OrderDirection.Incoming, rmaWithLineItemStatusByQuantity, UserContext);
+            return rmaWithLineItemStatusByQuantity.RMA;
+        }
+
+        [HttpPost, Route("refund/{rmaNumber}"), OrderCloudUserAuth(ApiRole.ShipmentAdmin)]
+        public async Task<RMA> ProcessRefund(string rmaNumber)
+        {
+            RMAWithLineItemStatusByQuantity rmaWithLineItemStatusByQuantity = await rmaCommand.ProcessRefund(rmaNumber, UserContext);
+            await lineItemCommand.HandleRMALineItemStatusChanges(OrderDirection.Incoming, rmaWithLineItemStatusByQuantity, UserContext);
+            return rmaWithLineItemStatusByQuantity.RMA;
+        }
     }
 }

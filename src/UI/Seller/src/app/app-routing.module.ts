@@ -36,6 +36,11 @@ const routes: Routes = [
           import('./orders/orders.module').then((m) => m.OrdersModule),
       },
       {
+        path: 'rmas',
+        loadChildren: () =>
+          import('./rmas/rmas.module').then((m) => m.RMAModule),
+      },
+      {
         path: 'buyers',
         loadChildren: () =>
           import('./buyers/buyers.module').then((m) => m.BuyersModule),
@@ -58,12 +63,11 @@ const routes: Routes = [
         loadChildren: () =>
           import('./suppliers/suppliers.module').then((m) => m.SuppliersModule),
       },
-      /** https://four51.atlassian.net/browse/HDS-319  Reimplement once feature is stable*/
-      // {
-      //   path: 'reports',
-      //   loadChildren: () =>
-      //     import('./reports/reports.module').then((m) => m.ReportsModule),
-      // },
+      {
+        path: 'reports',
+        loadChildren: () =>
+          import('./reports/reports.module').then((m) => m.ReportsModule),
+      },
       {
         path: 'storefronts',
         loadChildren: () =>
@@ -86,7 +90,7 @@ const routes: Routes = [
 ]
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forRoot(routes, { relativeLinkResolution: 'legacy' })],
   exports: [RouterModule],
 })
-export class AppRoutingModule {}
+export class AppRoutingModule { }

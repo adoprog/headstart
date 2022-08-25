@@ -1,24 +1,18 @@
-﻿using ordercloud.integrations.library;
-using OrderCloud.SDK;
+﻿using OrderCloud.SDK;
 
-namespace Headstart.Models.Headstart
+namespace Headstart.Common.Models
 {
-	[SwaggerModel]
-	public class HSCreditCard: CreditCard<HSCreditCardXP>
-	{
+    public class HSCreditCard : CreditCard<HSCreditCardXP>, IHSCreditCard
+    {
+    }
 
-	}
+    public class HSBuyerCreditCard : BuyerCreditCard<HSCreditCardXP>, IHSCreditCard
+    {
+    }
 
-	[SwaggerModel]
-	public class HSBuyerCreditCard : BuyerCreditCard<HSCreditCardXP>
-	{
-
-	}
-
-	[SwaggerModel]
-	public class HSCreditCardXP
-	{
-		[Required]
-		public Address CCBillingAddress { get; set; }
-	}
+    public class HSCreditCardXP
+    {
+        [Required]
+        public Address CCBillingAddress { get; set; }
+    }
 }

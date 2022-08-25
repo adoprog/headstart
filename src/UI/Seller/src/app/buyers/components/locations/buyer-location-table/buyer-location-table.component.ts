@@ -1,13 +1,7 @@
 import { Component, ChangeDetectorRef, NgZone } from '@angular/core'
 import { ResourceCrudComponent } from '@app-seller/shared/components/resource-crud/resource-crud.component'
-import { BuyerAddress, ListPage, Address } from '@ordercloud/angular-sdk'
+import { BuyerAddress, ListPage, Address } from 'ordercloud-javascript-sdk'
 import { Router, ActivatedRoute } from '@angular/router'
-import { FormControl, FormGroup, Validators } from '@angular/forms'
-import {
-  ValidateUSZip,
-  ValidatePhone,
-  ValidateEmail,
-} from '@app-seller/validators/validators'
 import { BuyerLocationService } from '../buyer-location.service'
 import { BuyerService } from '../../buyers/buyer.service'
 

@@ -1,19 +1,20 @@
 import { InjectionToken } from '@angular/core'
 import { environment } from '../../environments/environment.local'
-import { ApiRole } from '@ordercloud/angular-sdk'
+import { ApiRole } from 'ordercloud-javascript-sdk'
 import { AppConfig } from '@app-seller/models/environment.types'
 
 export const ocAppConfig: AppConfig = {
   appname: environment.appname,
   clientID: environment.clientID,
-  sellerID: environment.sellerID,
+  marketplaceID: environment.marketplaceID,
   middlewareUrl: environment.middlewareUrl,
-  cmsUrl: environment.cmsUrl,
   orderCloudApiUrl: environment.orderCloudApiUrl,
   translateBlobUrl: environment.translateBlobUrl,
+  supportedLanguages: environment.supportedLanguages,
+  defaultLanguage: environment.defaultLanguage,
   blobStorageUrl: environment.blobStorageUrl,
-  // sellerName is being hard-coded until this is available to store in OrderCloud
-  sellerName: environment.sellerName,
+  // marketplaceName is being hard-coded until this is available to store in OrderCloud
+  marketplaceName: environment.marketplaceName,
   scope: [
     // 'AdminAddressReader' is just for reading admin addresses as a seller user on product create/edti
     // Will need to be updated to 'AdminAddressAdmin' when seller address create is implemented
@@ -58,6 +59,7 @@ export const ocAppConfig: AppConfig = {
     'ProductFacetAdmin',
     'ProductFacetReader',
     'ShipmentAdmin',
+    'UnsubmittedOrderReader',
 
     // custom cms roles
     'AssetAdmin',
